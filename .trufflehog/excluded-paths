@@ -1,0 +1,17 @@
+# Regex per line, matched against file paths. Passed to trufflehog via
+# --exclude-paths. This replaces the excluded-paths file that used to ship
+# inside the private scanner image.
+
+# The scanner's own working directory and output.
+^\.trufflehog/.*
+
+# Dependencies and build output — third-party code we do not own, and
+# generated artefacts that would only produce noise.
+.*/node_modules/.*
+^\.gradle/.*
+^\.turbo/.*
+.*/build/.*
+.*/dist/.*
+.*/\.next/.*
+^pnpm-lock\.yaml$
+^gradle/wrapper/gradle-wrapper\.jar$

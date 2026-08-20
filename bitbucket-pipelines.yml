@@ -1,0 +1,55 @@
+pipelines:
+  pull-requests:
+    '**':
+      - parallel:
+          - step:
+              name: Secret scan (TruffleHog)
+              image: trufflesecurity/trufflehog:3.95.9
+              script:
+                # --fail exits 183 on any finding. Findings print to the build
+                # log rather than an artifact, so a committed secret is never
+                # copied into downloadable build output.
+                - |
+                  trufflehog filesystem "$BITBUCKET_CLONE_DIR" \
+                    --no-update \
+                    --no-verification \
+                    --exclude-paths=.trufflehog/excluded-paths \
+                    --config=.trufflehog/config.yaml \
+                    --force-skip-binaries \
+                    --force-skip-archives \
+                    --fail \
+                    ${TRUFFLEHOG_EXTRA_ARGS}
+
+          - step:
+              name: SAST (Semgrep)
+              image: semgrep/semgrep:1.174.0
+              clone:
+                depth: 1000
+              script:
+                - export SEMGREP_ENABLE_VERSION_CHECK=0
+                - export SEMGREP_SEND_METRICS=off
+                - git config --global --add safe.directory "$BITBUCKET_CLONE_DIR"
+                # Rules come from the Semgrep Registry, so there is no rules
+                # repo to keep in sync. Packs match this repo's stack: Spring
+                # Boot Java plus Next.js/React TypeScript. p/secrets is
+                # deliberately absent, because TruffleHog owns that job.
+                # Repo-local rules can live in .semgrep/ and be passed as one
+                # more --config.
+                #
+                # Bitbucket has no allow_failure, so the step swallows its own
+                # exit code to stay advisory.
+                - |
+                  set +e
+                  semgrep ci \
+                    --code \
+                    --config=p/default \
+                    --config=p/security-audit \
+                    --config=p/owasp-top-ten \
+                    --config=p/java \
+                    --config=p/typescript \
+                    --config=p/react \
+                    --force-color \
+                    --sarif-output=semgrep-sast-report.sarif
+                  exit 0
+              artifacts:
+                - semgrep-sast-report.sarif

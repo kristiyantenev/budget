@@ -98,3 +98,6 @@ next-env.d.ts
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+
+# Security scan output (the checked-in scanner config stays tracked)
+semgrep-sast-report.sarif

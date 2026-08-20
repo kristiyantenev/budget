@@ -1,0 +1,8 @@
+---
+# Custom detector definitions for TruffleHog, replacing the default config that
+# used to ship inside the private scanner image. TruffleHog's built-in
+# detectors run regardless of what is listed here; this file is only for
+# BooleanOne-specific credential shapes.
+#
+# See https://github.com/trufflesecurity/trufflehog#custom-detectors
+detectors: []
