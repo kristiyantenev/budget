@@ -25,6 +25,7 @@ dist/
 
 # Package files
 *.jar
+!gradle-wrapper.jar
 
 # Maven
 target/
@@ -62,6 +63,7 @@ out/
 
 # production
 build
+bin/
 
 # turbo
 .turbo
@@ -84,3 +86,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# gradle
+.gradle
+
+# IntelliJ IDEA
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
