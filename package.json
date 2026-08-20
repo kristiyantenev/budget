@@ -5,8 +5,9 @@
   "license": "PROPRIETARY",
   "scripts": {
     "build": "turbo build",
+    "test": "turbo test",
     "dev": "turbo dev",
-    "lint": "biome lint .",
+    "lint": "turbo lint",
     "format": "biome format --write .",
     "check": "biome check .",
     "check:fix": "biome check --write .",

@@ -24,6 +24,8 @@ importers:
         specifier: ^7
         version: 7.0.2
 
+  apps/resourceserver: {}
+
   apps/web:
     dependencies:
       '@workspace/ui':

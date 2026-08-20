@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@booleanone/web",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint ."
   },
   "dependencies": {
     "@workspace/ui": "workspace:*",
