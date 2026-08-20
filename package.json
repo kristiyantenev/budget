@@ -1,0 +1,32 @@
+{
+  "name": "@booleanone/b1-budget",
+  "version": "0.0.1",
+  "private": true,
+  "license": "PROPRIETARY",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "typecheck": "turbo typecheck",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.9",
+    "@workspace/typescript-config": "workspace:*",
+    "husky": "^9.1.7",
+    "turbo": "^2.10.11",
+    "typescript": "^7"
+  },
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "lint-staged": {
+    "src/**/*": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
+  }
+}
