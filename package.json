@@ -18,16 +18,12 @@
     "@biomejs/biome": "^2.5.9",
     "@workspace/typescript-config": "workspace:*",
     "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
     "turbo": "^2.10.11",
     "typescript": "^7"
   },
   "packageManager": "pnpm@11.11.0",
   "engines": {
     "node": ">=24"
-  },
-  "lint-staged": {
-    "src/**/*": [
-      "biome check --write --no-errors-on-unmatched"
-    ]
   }
 }
