@@ -61,7 +61,8 @@ BooleanOne products rather than owned by B1 Budget.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for branch and commit conventions.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for branch and commit conventions, and for where
+architecture decisions are recorded.
 
 Coding agents should read [AGENTS.md](AGENTS.md), which carries the rules that are easy to get
 wrong and hard to infer from the code.

@@ -36,8 +36,17 @@ environment variables. The repo holds references, never values, and that include
 
 - **Auth.** Keycloak at `accounts.booleanone.com` is the identity provider for every BooleanOne
 product, so keep B1 Budget assumptions out of it. Never store OAuth tokens in browser local
-storage.
+storage. Most of this area is settled by an ADR.
+
+## Load-bearing product decisions
+
+Auth, session handling, routing, data ownership, etc. in this repo are constrained by decisions
+taken outside it. **Before changing any of them, search the ADR project** named in
+[CONTRIBUTING.md, Architecture decisions](CONTRIBUTING.md#architecture-decisions), and follow what
+you find. An `// ADR-42:` comment marks one of these in code. Do not work around it, and say so if
+the task requires contradicting it.
 
 ## Git
 
-Read `CONTRIBUTING.md` before committing. It carries the branch, subject, and body rules.
+Read [CONTRIBUTING.md, Commits](CONTRIBUTING.md#commits) before committing. It carries the branch,
+subject, and body rules.
