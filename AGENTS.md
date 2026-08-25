@@ -28,6 +28,9 @@ pnpm lint    # lint every package, both languages
 
 ## Conventions
 
+- **Vocabulary.** [`docs/GLOSSARY.md`](docs/GLOSSARY.md) defines the terms this repo uses. Use them
+  in everything you write, and read the entry before touching what it names.
+
 - **Dependency versions.** Every JVM version lives in `gradle/libs.versions.toml`, reached through a
 `libs.` accessor. A version string in a `build.gradle.kts` is a bug.
 
