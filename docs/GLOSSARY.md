@@ -20,6 +20,17 @@ The single module in `apps/web` that every server component, Server Action and R
 through to reach product data. The only code in the web app that decides whether a caller is
 allowed.
 
+### Proxy Route Handler
+
+A Route Handler in `apps/web` that exists to move bytes the Next server has no reason to hold in
+memory, such as a file export, a statement upload, or a streamed response. It attaches the bearer
+token through the same wrapper every other call uses, and forwards.
+
+It is the one exception to reads happening in server components and mutations happening in Server
+Actions, and it is not a general-purpose proxy. A handler that carries product data, product logic,
+or an arbitrary forwarded path is not this, and a forwarded path is an open proxy to the API holding
+the user's token.
+
 ## Identity
 
 ### Realm `b1`
@@ -93,6 +104,15 @@ calls this a user session, and its `sid` is what a B1 Budget session keys on.
 Keycloak retiring a refresh token as it is spent and issuing a new one, making each refresh token
 single-use. It is why the refresh path serialises instead of letting two requests race for the same
 token.
+
+### Half-completed refresh
+
+A refresh where Keycloak issued the new token pair and retired the old one, and the write of that
+pair to the session row failed. The row now holds a refresh token that can never mint another, and
+nothing about it looks broken from outside.
+
+It is not a refresh that failed. A failed refresh leaves the old pair spendable and can be retried.
+This one cannot, and it recovers only through a fresh authorization code exchange.
 
 ### RP-initiated logout
 
