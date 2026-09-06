@@ -44,10 +44,14 @@ storage. Most of this area is settled by an ADR.
 ## Load-bearing product decisions
 
 Auth, session handling, routing, data ownership, etc. in this repo are constrained by decisions
-taken outside it. **Before changing any of them, search the ADR project** named in
-[CONTRIBUTING.md, Architecture decisions](CONTRIBUTING.md#architecture-decisions), and follow what
-you find. An `// ADR-42:` comment marks one of these in code. Do not work around it, and say so if
-the task requires contradicting it.
+taken outside it. **Before changing any of them, read** [`docs/DECISIONS.md`](docs/DECISIONS.md).
+It indexes every ADR that binds this repo by key, title, and area, so a `grep` tells you what
+constrains the thing you are about to touch without a network call. The index carries no reasoning.
+To understand more about ADRs, refer to
+[CONTRIBUTING.md, Architecture decisions](CONTRIBUTING.md#architecture-decisions).
+
+Do not work around a decision, and say so if the task requires contradicting it. If you take a new
+decision that belongs there, add the row when the ADR is written, not later.
 
 ## Git
 
