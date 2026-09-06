@@ -28,9 +28,13 @@ pnpm install
 pnpm dev
 ```
 
-The web app comes up on http://localhost:3000 and the API on http://localhost:8080. 
-Set `BUDGET_TOKEN_ISSUER_URI`, `BUDGET_TOKEN_AUDIENCE` and `BUDGET_RESOURCE_URI` before `pnpm dev`
-to override the token. Turbo passes these variables to the resource server.
+The web app comes up on http://localhost:3000 and the API on http://localhost:8080. Spring also publishes public protected resource metadata at `/.well-known/oauth-protected-resource`. The API discovers Keycloak's signing keys on the first request carrying a bearer token rather than at
+startup, which means it comes up whether or not `accounts.booleanone.com` is reachable.
+
+Set `BUDGET_TOKEN_ISSUER_URI` and `BUDGET_TOKEN_AUDIENCE` before `pnpm dev` to override the token
+issuer and audience for local development. Set `BUDGET_RESOURCE_URI=http://localhost:8080` so
+public metadata and authentication challenges use the local API address. Turbo passes these
+variables to the resource server.
 
 You do not need Gradle installed. The repo ships the Gradle wrapper, and `pnpm` drives it for you.
 
