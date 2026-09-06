@@ -1,20 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalPassThroughEnv": [
-    "JAVA_HOME",
-    "SDKMAN_DIR",
-    "SDKMAN_CANDIDATES_DIR"
-  ],
+  "globalPassThroughEnv": ["JAVA_HOME", "SDKMAN_DIR", "SDKMAN_CANDIDATES_DIR"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env*"
-      ],
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
@@ -23,30 +14,30 @@
       ]
     },
     "typecheck": {
-      "dependsOn": [
-        "^typecheck"
-      ]
+      "dependsOn": ["^typecheck"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "test": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "build/test-results/**",
-        "build/reports/tests/**"
+    "@booleanone/resourceserver#dev": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": [
+        "BUDGET_RESOURCE_URI",
+        "BUDGET_TOKEN_ISSUER_URI",
+        "BUDGET_TOKEN_AUDIENCE"
       ]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["build/test-results/**", "build/reports/tests/**"]
     },
     "lint": {
       "outputs": []
     },
     "@booleanone/resourceserver#lint": {
-      "outputs": [
-        "build/reports/checkstyle/**"
-      ]
+      "outputs": ["build/reports/checkstyle/**"]
     }
   }
 }

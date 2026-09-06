@@ -28,8 +28,9 @@ pnpm install
 pnpm dev
 ```
 
-The web app comes up on http://localhost:3000. The API starts alongside it, though it exits
-immediately until a web starter is added to `apps/resourceserver`.
+The web app comes up on http://localhost:3000 and the API on http://localhost:8080. 
+Set `BUDGET_TOKEN_ISSUER_URI`, `BUDGET_TOKEN_AUDIENCE` and `BUDGET_RESOURCE_URI` before `pnpm dev`
+to override the token. Turbo passes these variables to the resource server.
 
 You do not need Gradle installed. The repo ships the Gradle wrapper, and `pnpm` drives it for you.
 
