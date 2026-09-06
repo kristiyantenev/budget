@@ -28,8 +28,12 @@ pnpm install
 pnpm dev
 ```
 
-The web app comes up on http://localhost:3000 and the API on http://localhost:8080. Spring also publishes public protected resource metadata at `/.well-known/oauth-protected-resource`. The API discovers Keycloak's signing keys on the first request carrying a bearer token rather than at
-startup, which means it comes up whether or not `accounts.booleanone.com` is reachable.
+The web app comes up on http://localhost:3000 and the API on http://localhost:8080. The API is
+bearer-only, so `/me` answers 401 until you send it a token that realm `b1` minted for
+`b1-budget-api`. Spring also publishes public protected resource metadata at
+`/.well-known/oauth-protected-resource`. The API discovers Keycloak's signing keys on the first
+request carrying a bearer token rather than at startup, which means it comes up whether or not
+`accounts.booleanone.com` is reachable.
 
 Set `BUDGET_TOKEN_ISSUER_URI` and `BUDGET_TOKEN_AUDIENCE` before `pnpm dev` to override the token
 issuer and audience for local development. Set `BUDGET_RESOURCE_URI=http://localhost:8080` so
