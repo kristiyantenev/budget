@@ -16,7 +16,7 @@ You need three things installed:
 | Tool | Version | Notes |
 | --- | --- | --- |
 | Node | 24 or newer | `.node-version` pins it for nvm and fnm |
-| pnpm | 11.11.0 | `corepack enable` will install the pinned version |
+| pnpm | 12.5.1 | `corepack enable` will install the pinned version |
 | JDK | 25 | Any distribution. SDKMAN and Homebrew both work |
 
 `JAVA_HOME` must point at your JDK. Turbo runs tasks with a scrubbed environment and passes
