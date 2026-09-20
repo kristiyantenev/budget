@@ -3,27 +3,28 @@
   "version": "0.0.1",
   "private": true,
   "license": "PROPRIETARY",
+  "type": "module",
   "scripts": {
     "build": "turbo build",
-    "test": "turbo test",
     "dev": "turbo dev",
+    "format": "oxfmt --write .",
     "lint": "turbo lint",
-    "format": "biome format --write .",
-    "check": "biome check .",
-    "check:fix": "biome check --write .",
-    "typecheck": "turbo typecheck",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.9",
+    "@workspace/oxlint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
     "turbo": "^2.10.11",
     "typescript": "^7"
   },
-  "packageManager": "pnpm@12.5.1",
   "engines": {
     "node": ">=24"
-  }
+  },
+  "packageManager": "pnpm@12.5.1"
 }

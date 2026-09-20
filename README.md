@@ -13,11 +13,11 @@ reflects a decision you made rather than an average the software inferred.
 
 You need three things installed:
 
-| Tool | Version | Notes |
-| --- | --- | --- |
-| Node | 24 or newer | `.node-version` pins it for nvm and fnm |
-| pnpm | 12.5.1 | `corepack enable` will install the pinned version |
-| JDK | 25 | Any distribution. SDKMAN and Homebrew both work |
+| Tool | Version     | Notes                                             |
+| ---- | ----------- | ------------------------------------------------- |
+| Node | 24 or newer | `.node-version` pins it for nvm and fnm           |
+| pnpm | 12.5.1      | `corepack enable` will install the pinned version |
+| JDK  | 25          | Any distribution. SDKMAN and Homebrew both work   |
 
 `JAVA_HOME` must point at your JDK. Turbo runs tasks with a scrubbed environment and passes
 `JAVA_HOME` through explicitly, so a JDK that is only reachable through your shell's `PATH` will
@@ -44,20 +44,20 @@ You do not need Gradle installed. The repo ships the Gradle wrapper, and `pnpm` 
 
 ## Working in the repo
 
-| Command | What it does |
-| --- | --- |
-| `pnpm dev` | Runs the web app and the API together |
-| `pnpm build` | Builds every package, both languages |
-| `pnpm test` | Runs every test suite |
-| `pnpm lint` | Biome for TypeScript, Checkstyle for Java |
-| `pnpm typecheck` | Type-checks the TypeScript packages |
+| Command          | What it does                                          |
+| ---------------- | ----------------------------------------------------- |
+| `pnpm dev`       | Runs the web app and the API together                 |
+| `pnpm build`     | Builds every package, both languages                  |
+| `pnpm test`      | Runs every test suite                                 |
+| `pnpm lint`      | Oxlint for JavaScript/TypeScript, Checkstyle for Java |
+| `pnpm format`    | Formats files with Oxfmt                              |
+| `pnpm typecheck` | Type-checks the TypeScript packages                   |
 
 One command covers both languages because Turbo drives the whole repo. The Java service is a
 regular Gradle project with a small `package.json` that lets Turbo see it, so you can also drop
 into `apps/resourceserver` and run `./gradlew` directly when you want a task Turbo does not expose.
 
-Commits are checked before they land. A Checkstyle violation blocks the commit rather than
-surfacing later in CI.
+The commit hook runs Oxlint fixes followed by Oxfmt on staged JavaScript and TypeScript, Oxfmt on other supported staged files, and Checkstyle on staged Java changes. Lint violations block the commit.
 
 ## Layout
 

@@ -6,12 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "build/libs/**",
-        "build/classes/**"
-      ]
+      "outputs": [".next/**", "!.next/cache/**", "build/libs/**", "build/classes/**"]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
@@ -23,18 +18,20 @@
     "@booleanone/resourceserver#dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": [
-        "BUDGET_RESOURCE_URI",
-        "BUDGET_TOKEN_ISSUER_URI",
-        "BUDGET_TOKEN_AUDIENCE"
-      ]
+      "passThroughEnv": ["BUDGET_RESOURCE_URI", "BUDGET_TOKEN_ISSUER_URI", "BUDGET_TOKEN_AUDIENCE"]
     },
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["build/test-results/**", "build/reports/tests/**"]
     },
     "lint": {
-      "outputs": []
+      "outputs": [],
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/oxlint.config.ts",
+        "$TURBO_ROOT$/packages/oxlint-config/**"
+      ]
     },
     "@booleanone/resourceserver#lint": {
       "outputs": ["build/reports/checkstyle/**"]

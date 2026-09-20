@@ -1,14 +1,14 @@
 {
   "name": "@booleanone/web",
   "version": "0.0.1",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
+    "dev": "next dev",
+    "lint": "oxlint .",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome lint ."
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@workspace/ui": "workspace:*",
@@ -19,11 +19,14 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@shadcn/lint": "^0.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@workspace/oxlint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "oxlint": "^1.83.0",
     "typescript": "^7"
   }
 }

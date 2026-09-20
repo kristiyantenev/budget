@@ -1,0 +1,26 @@
+{
+  "name": "@workspace/oxlint-config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Oxlint rules for BooleanOne packages.",
+  "license": "PROPRIETARY",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@oxlint/plugins": "1.83.0"
+  },
+  "devDependencies": {
+    "@workspace/typescript-config": "workspace:*",
+    "oxlint": "^1.83.0",
+    "typescript": "^7"
+  },
+  "peerDependencies": {
+    "oxlint": "^1.83.0"
+  }
+}
