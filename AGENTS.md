@@ -1,4 +1,5 @@
 # B1 Budget
+
 > **Note:** `CLAUDE.md` is a symlink to `AGENTS.md`. They are the same file.
 
 B1 Budget is a personal budgeting application. Users assign available funds to categories that
@@ -32,14 +33,14 @@ pnpm lint    # lint every package, both languages
   in everything you write, and read the entry before touching what it names.
 
 - **Dependency versions.** Every JVM version lives in `gradle/libs.versions.toml`, reached through a
-`libs.` accessor. A version string in a `build.gradle.kts` is a bug.
+  `libs.` accessor. A version string in a `build.gradle.kts` is a bug.
 
 - **Secrets.** Development secrets live in OpenBao at `vault.booleanone.com` and reach the app as
-environment variables. The repo holds references, never values, and that includes commit messages.
+  environment variables. The repo holds references, never values, and that includes commit messages.
 
 - **Auth.** Keycloak at `accounts.booleanone.com` is the identity provider for every BooleanOne
-product, so keep B1 Budget assumptions out of it. Never store OAuth tokens in browser local
-storage. Most of this area is settled by an ADR.
+  product, so keep B1 Budget assumptions out of it. Never store OAuth tokens in browser local
+  storage. Most of this area is settled by an ADR.
 
 ## Load-bearing product decisions
 

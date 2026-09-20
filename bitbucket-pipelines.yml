@@ -1,6 +1,6 @@
 pipelines:
   pull-requests:
-    '**':
+    "**":
       - parallel:
           - step:
               name: Secret scan (TruffleHog)

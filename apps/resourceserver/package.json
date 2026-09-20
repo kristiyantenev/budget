@@ -5,9 +5,9 @@
   "description": "Turbo shim. gradlew is a symlink to the root wrapper; Gradle scopes tasks to this directory.",
   "scripts": {
     "build": "./gradlew build -x test",
-    "test": "./gradlew test",
-    "lint": "./gradlew checkstyleMain checkstyleTest",
+    "clean": "./gradlew clean",
     "dev": "./gradlew bootRun",
-    "clean": "./gradlew clean"
+    "lint": "./gradlew checkstyleMain checkstyleTest",
+    "test": "./gradlew test"
   }
 }

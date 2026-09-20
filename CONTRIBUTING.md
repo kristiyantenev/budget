@@ -13,7 +13,7 @@ BooleanOne product, because most of them outlive the repo that provoked them.
   scanning that list has no idea which repo the decision came from.
 - **Name the ADR key in the code it constrains.** A commit message is found by archaeology, so put
   the key in a comment at the seam a future reader would otherwise undo: `// ADR-42: the proxy
-  refuses; the data access layer verifies.` The commit trailer is the audit trail, not the way
+refuses; the data access layer verifies.` The commit trailer is the audit trail, not the way
   anybody discovers the decision exists.
 
 ## Commits
