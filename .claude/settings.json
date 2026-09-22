@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "(cd \"$CLAUDE_PROJECT_DIR\" && pnpm exec oxfmt --check . </dev/null && pnpm lint </dev/null) >&2 || exit 2",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
