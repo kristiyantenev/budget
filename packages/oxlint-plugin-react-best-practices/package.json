@@ -1,0 +1,31 @@
+{
+  "name": "@workspace/oxlint-plugin-react-best-practices",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Oxlint rules derived from the React best practices guide.",
+  "license": "PROPRIETARY",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint .",
+    "test": "node --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@oxlint/plugins": "1.83.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "@workspace/typescript-config": "workspace:*",
+    "oxlint": "^1.83.0",
+    "typescript": "^7"
+  },
+  "peerDependencies": {
+    "oxlint": "^1.83.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

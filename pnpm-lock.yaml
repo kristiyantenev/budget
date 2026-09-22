@@ -232,6 +232,9 @@ importers:
       '@workspace/oxlint-config':
         specifier: workspace:*
         version: link:../../packages/oxlint-config
+      '@workspace/oxlint-plugin-react-best-practices':
+        specifier: workspace:*
+        version: link:../../packages/oxlint-plugin-react-best-practices
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -248,6 +251,25 @@ importers:
         specifier: 1.83.0
         version: 1.83.0
     devDependencies:
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      oxlint:
+        specifier: ^1.83.0
+        version: 1.83.0
+      typescript:
+        specifier: ^7
+        version: 7.0.2
+
+  packages/oxlint-plugin-react-best-practices:
+    dependencies:
+      '@oxlint/plugins':
+        specifier: 1.83.0
+        version: 1.83.0
+    devDependencies:
+      '@types/node':
+        specifier: ^24
+        version: 24.13.6
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -317,6 +339,9 @@ importers:
       '@workspace/oxlint-config':
         specifier: workspace:*
         version: link:../oxlint-config
+      '@workspace/oxlint-plugin-react-best-practices':
+        specifier: workspace:*
+        version: link:../oxlint-plugin-react-best-practices
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

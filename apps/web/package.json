@@ -25,6 +25,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@workspace/oxlint-config": "workspace:*",
+    "@workspace/oxlint-plugin-react-best-practices": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "oxlint": "^1.83.0",
     "typescript": "^7"

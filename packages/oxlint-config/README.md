@@ -17,7 +17,7 @@ Run `oxlint .` from the package directory. Avoid `--config`, which disables
 [nested config discovery](https://oxc.rs/docs/guide/usage/linter/nested-config.html).
 
 The shared config supplies rule categories, TypeScript, Unicorn, Oxc, and the custom
-code-standards plugin and rules. The plugin lives in `plugins/code-standards`
+workspace-specific plugin and rules. The plugin lives in `plugins/workspace-specific`
 inside this package. The root, web, and UI configs extend `@workspace/oxlint-config`
 directly. Web and UI add React and JSX accessibility plugins, plus the shadcn
 JavaScript plugin and enable `no-restyle`,
@@ -30,9 +30,10 @@ Ignore patterns are not inherited through `extends`. Set `ignorePatterns` in the
 consuming config to skip generated output and agent directories. Patterns are
 relative to that config's directory.
 
-The optional Effect plugin is available through `@workspace/oxlint-config/effect`.
-Add `import.meta.resolve("@workspace/oxlint-config/effect")` to `jsPlugins` and
-enable the desired `code-standards-effect/*` rules to use it.
+React best practices rules live in the separate
+[`@workspace/oxlint-plugin-react-best-practices`](../oxlint-plugin-react-best-practices/README.md)
+package. Web and UI load that plugin explicitly and configure its rules. Extending
+this base config does not enable it.
 
 This is a private workspace package. It requires Node.js 24 or newer, as the
-repository does, and Oxlint 1.82 or newer within version 1.
+repository does, and Oxlint 1.83 or newer within version 1.

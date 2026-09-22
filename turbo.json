@@ -24,13 +24,17 @@
       "dependsOn": ["^build"],
       "outputs": ["build/test-results/**", "build/reports/tests/**"]
     },
+    "@workspace/oxlint-plugin-react-best-practices#test": {
+      "outputs": []
+    },
     "lint": {
       "outputs": [],
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/oxlint.config.ts",
-        "$TURBO_ROOT$/packages/oxlint-config/**"
+        "$TURBO_ROOT$/packages/oxlint-config/**",
+        "$TURBO_ROOT$/packages/oxlint-plugin-react-best-practices/**"
       ]
     },
     "@booleanone/resourceserver#lint": {
