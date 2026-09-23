@@ -21,7 +21,13 @@
     "@booleanone/web#dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["BUDGET_DATABASE_URL"]
+      "passThroughEnv": [
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "BUDGET_OIDC_ISSUER",
+        "BUDGET_OIDC_CLIENT_SECRET",
+        "BUDGET_DATABASE_URL"
+      ]
     },
     "test": {
       "dependsOn": ["^build"],
@@ -29,6 +35,17 @@
     },
     "@workspace/oxlint-plugin-react-best-practices#test": {
       "outputs": []
+    },
+    "@booleanone/web#test": {
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.test", ".env.test.local"],
+      "env": [
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "BUDGET_OIDC_ISSUER",
+        "BUDGET_OIDC_CLIENT_ID",
+        "BUDGET_OIDC_CLIENT_SECRET"
+      ]
     },
     "lint": {
       "outputs": [],
@@ -45,5 +62,13 @@
     }
   },
   "ui": "tui",
-  "globalPassThroughEnv": ["JAVA_HOME", "SDKMAN_DIR", "SDKMAN_CANDIDATES_DIR"]
+  "globalPassThroughEnv": [
+    "JAVA_HOME",
+    "SDKMAN_DIR",
+    "SDKMAN_CANDIDATES_DIR",
+    "DOCKER_HOST",
+    "DOCKER_CONTEXT",
+    "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE",
+    "TESTCONTAINERS_HOST_OVERRIDE"
+  ]
 }
