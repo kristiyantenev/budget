@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "next build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
     "dev": "next dev",
     "lint": "oxlint .",
     "start": "next start",
@@ -12,21 +15,27 @@
   },
   "dependencies": {
     "@workspace/ui": "workspace:*",
+    "drizzle-orm": "0.45.3",
     "lucide-react": "^1.33.0",
     "next": "16.3.1",
     "next-themes": "^0.4.6",
+    "pg": "^8.23.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
+    "@next/env": "16.3.1",
     "@shadcn/lint": "^0.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@workspace/oxlint-config": "workspace:*",
     "@workspace/oxlint-plugin-react-best-practices": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "drizzle-kit": "0.31.11",
     "oxlint": "^1.83.0",
     "typescript": "^7"
   }

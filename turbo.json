@@ -1,7 +1,5 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "ui": "tui",
-  "globalPassThroughEnv": ["JAVA_HOME", "SDKMAN_DIR", "SDKMAN_CANDIDATES_DIR"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -19,6 +17,11 @@
       "cache": false,
       "persistent": true,
       "passThroughEnv": ["BUDGET_RESOURCE_URI", "BUDGET_TOKEN_ISSUER_URI", "BUDGET_TOKEN_AUDIENCE"]
+    },
+    "@booleanone/web#dev": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": ["BUDGET_DATABASE_URL"]
     },
     "test": {
       "dependsOn": ["^build"],
@@ -40,5 +43,7 @@
     "@booleanone/resourceserver#lint": {
       "outputs": ["build/reports/checkstyle/**"]
     }
-  }
+  },
+  "ui": "tui",
+  "globalPassThroughEnv": ["JAVA_HOME", "SDKMAN_DIR", "SDKMAN_CANDIDATES_DIR"]
 }
