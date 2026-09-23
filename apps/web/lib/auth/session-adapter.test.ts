@@ -1,8 +1,9 @@
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
-import { type TestHelpers, testUtils } from "better-auth/plugins";
+import { genericOAuth, type TestHelpers, testUtils } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { NextRequest } from "next/server";
 import { Pool } from "pg";
 import { afterAll, afterEach, beforeAll, expect, test } from "vitest";
 import { z } from "zod";
@@ -17,6 +18,7 @@ import drizzleConfig from "../../drizzle.config";
 import * as schema from "../../drizzle/schema";
 import { createAuth } from "./create-auth";
 import { createSessionRefresher, SessionEnded } from "./refresh-session";
+import { createSessionProxy } from "./session-proxy";
 
 let container: Awaited<ReturnType<PostgreSqlContainer["start"]>>;
 
@@ -239,6 +241,51 @@ afterAll(async () => {
   await container?.stop();
 });
 
+test("a normal page response renews the cookie after one refresh shared by concurrent requests", async () => {
+  const first = await createSession();
+  const before = await storedSession(first.session.id);
+  await pool.query("UPDATE betterauth.session SET access_token_expires_at = now() WHERE id = $1", [
+    first.session.id,
+  ]);
+  const proxy = createSessionProxy(auth, config.baseURL);
+  const startedAt = Date.now();
+
+  const responses = await Promise.all(
+    Array.from({ length: 6 }, () =>
+      proxy(new NextRequest(`${baseURL}/budgets`, { headers: first.headers })),
+    ),
+  );
+
+  const stored = await storedSession(first.session.id);
+
+  expect(refreshRequests).toBe(1);
+  expect(stored.accessToken).not.toBe(before.accessToken);
+  expect(stored.refreshToken).not.toBe(before.refreshToken);
+  expect(stored.token).toBe(before.token);
+  expect(stored.expiresAt.getTime()).toBeGreaterThanOrEqual(startedAt + refreshLifetime * 1000);
+
+  for (const response of responses) {
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("location")).toBeNull();
+
+    const cookie = response.cookies.get((await auth.$context).authCookies.sessionToken.name);
+
+    expect(cookie?.httpOnly).toBe(true);
+    expect(cookie?.maxAge).toBeGreaterThan(refreshLifetime - 5);
+    expect(
+      Math.abs(new Date(cookie?.expires ?? 0).getTime() - stored.expiresAt.getTime()),
+    ).toBeLessThan(1000);
+    expect(await response.text()).not.toContain(stored.accessToken);
+  }
+
+  const repeated = await proxy(new NextRequest(`${baseURL}/budgets`, { headers: first.headers }));
+
+  expect(repeated.status).toBe(200);
+  expect(refreshRequests).toBe(1);
+  expect((await storedSession(first.session.id)).expiresAt).toEqual(stored.expiresAt);
+});
+
 test("a shorter remaining Keycloak lifetime bounds both session and cookie", async () => {
   const first = await createSession();
   refreshLifetime = 120;
@@ -259,6 +306,77 @@ test("a shorter remaining Keycloak lifetime bounds both session and cookie", asy
   expect(response.headers.getSetCookie()[0]).toMatch(/Max-Age=1[12][0-9]/);
 });
 
+test("reading a page with current tokens makes no provider request and does not slide expiry", async () => {
+  const first = await createSession();
+  const before = await storedSession(first.session.id);
+  const proxy = createSessionProxy(auth, config.baseURL);
+
+  const response = await proxy(new NextRequest(`${baseURL}/budgets`, { headers: first.headers }));
+
+  expect(response.status).toBe(200);
+  expect(refreshRequests).toBe(0);
+  expect(await storedSession(first.session.id)).toEqual(before);
+});
+
+test("an ended session starts one silent authorization-code exchange on the page response", async () => {
+  const first = await createSession();
+  providerStatus = 400;
+  await pool.query("UPDATE betterauth.session SET access_token_expires_at = now() WHERE id = $1", [
+    first.session.id,
+  ]);
+
+  const recoveryAuth = createAuth({ ...config, issuer: providerIssuer }, db, {
+    plugins: [
+      genericOAuth({
+        config: [
+          {
+            providerId: "keycloak",
+            clientId: config.clientId,
+            clientSecret: config.clientSecret,
+            authorizationUrl: `${providerIssuer}/authorize`,
+            tokenUrl: `${providerIssuer}/token`,
+            userInfoUrl: `${providerIssuer}/userinfo`,
+            pkce: true,
+          },
+        ],
+      }),
+    ],
+  });
+
+  const proxy = createSessionProxy(recoveryAuth, config.baseURL);
+
+  const response = await proxy(new NextRequest(`${baseURL}/budgets`, { headers: first.headers }));
+
+  const destination = new URL(response.headers.get("location") ?? "");
+
+  expect(response.status).toBe(303);
+  expect(destination.origin).toBe(providerIssuer);
+  expect(destination.pathname).toBe("/authorize");
+  expect(destination.searchParams.get("prompt")).toBe("none");
+  expect(destination.searchParams.get("state")).toBeTruthy();
+  expect(destination.searchParams.get("code_challenge")).toBeTruthy();
+  expect(response.cookies.get("budget.session-recovery")?.maxAge).toBe(60);
+  expect(response.cookies.get((await auth.$context).authCookies.sessionToken.name)?.maxAge).toBe(0);
+});
+
+test("anonymous requests redirect to sign-in while public routes remain accessible", async () => {
+  const proxy = createSessionProxy(auth, config.baseURL);
+
+  const response = await proxy(new NextRequest(`${baseURL}/budgets?month=2026-09`));
+
+  const destination = new URL(response.headers.get("location") ?? "");
+
+  expect(response.status).toBe(303);
+  expect(destination.pathname).toBe("/sign-in");
+  expect(destination.searchParams.get("returnTo")).toBe("/budgets?month=2026-09");
+  expect(refreshRequests).toBe(0);
+
+  for (const path of ["/sign-in", "/api/auth/callback/keycloak", "/healthz"]) {
+    const publicResponse = await proxy(new NextRequest(`${baseURL}${path}`));
+    expect(publicResponse.headers.get("x-middleware-next")).toBe("1");
+  }
+});
+
 test("an early token refusal uses the same refresh lock and does not spend a rotated token twice", async () => {
   const first = await createSession();
   const stored = await storedSession(first.session.id);
@@ -274,6 +392,47 @@ test("an early token refusal uses the same refresh lock and does not spend a rot
 
   expect(refreshRequests).toBe(1);
   expect(new Set(renewed.map((result) => result.accessToken)).size).toBe(1);
+});
+
+test("a temporary provider failure returns 503 without extending or clearing the session", async () => {
+  const first = await createSession();
+  providerStatus = 503;
+  await pool.query("UPDATE betterauth.session SET access_token_expires_at = now() WHERE id = $1", [
+    first.session.id,
+  ]);
+  const before = await storedSession(first.session.id);
+  const proxy = createSessionProxy(auth, config.baseURL);
+
+  const response = await proxy(new NextRequest(`${baseURL}/budgets`, { headers: first.headers }));
+
+  expect(response.status).toBe(503);
+  expect(response.headers.getSetCookie()).toHaveLength(0);
+  expect(await storedSession(first.session.id)).toEqual(before);
+});
+
+test("an invalid grant clears the cookie and a recent recovery prevents another SSO redirect", async () => {
+  const first = await createSession();
+  providerStatus = 400;
+  await pool.query("UPDATE betterauth.session SET access_token_expires_at = now() WHERE id = $1", [
+    first.session.id,
+  ]);
+  const headers = new Headers(first.headers);
+  headers.set("cookie", `${headers.get("cookie")}; budget.session-recovery=1`);
+  const proxy = createSessionProxy(auth, config.baseURL);
+
+  const response = await proxy(
+    new NextRequest(`${baseURL}/budgets?month=2026-09`, {
+      headers,
+      method: "POST",
+    }),
+  );
+
+  expect(response.status).toBe(303);
+  const location = new URL(response.headers.get("location") ?? "");
+  expect(location.pathname).toBe("/sign-in");
+  expect(location.searchParams.get("reason")).toBe("expired");
+  expect(location.searchParams.get("returnTo")).toBe("/budgets?month=2026-09");
+  expect(response.cookies.get((await auth.$context).authCookies.sessionToken.name)?.maxAge).toBe(0);
 });
 
 test("a failed database write after rotation ends the session while preserving its row", async () => {
