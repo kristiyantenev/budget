@@ -8,7 +8,7 @@ description = "Budgeting API for B1 Budget: zero-based budgeting, categories, tr
 
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webmvc")
-  implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+  implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
