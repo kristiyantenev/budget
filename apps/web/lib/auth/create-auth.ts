@@ -27,6 +27,17 @@ const hidden = {
 
 const hiddenDate = { ...hidden, type: "date" } as const;
 
+// ADR-21, ADR-24: accounts link identities; each sid owns its credentials.
+const accountWithoutCredentials = {
+  accessToken: null,
+  refreshToken: null,
+  idToken: null,
+  accessTokenExpiresAt: null,
+  refreshTokenExpiresAt: null,
+  scope: null,
+  password: null,
+};
+
 export type AuthConfig = {
   baseURL: string;
   secret: string;
@@ -90,8 +101,23 @@ export function createAuth<const Plugins extends BetterAuthPlugin[] = []>(
         idTokenExpiresAt: hiddenDate,
       },
     },
-    account: { accountLinking: { enabled: false } },
+    account: {
+      accountLinking: { enabled: false },
+      additionalFields: {
+        issuer: { ...hidden, defaultValue: config.issuer },
+      },
+    },
     databaseHooks: {
+      account: {
+        create: {
+          before: async (account) => ({
+            data: { ...account, ...accountWithoutCredentials, issuer: config.issuer },
+          }),
+        },
+        update: {
+          before: async (account) => ({ data: { ...account, ...accountWithoutCredentials } }),
+        },
+      },
       session: {
         create: {
           before: async (session) => {
@@ -142,11 +168,6 @@ export function createAuth<const Plugins extends BetterAuthPlugin[] = []>(
                 const refreshExpiresIn = refreshLifetime.parse(tokens.raw?.refresh_expires_in);
 
                 const refreshTokenExpiresAt = new Date(Date.now() + refreshExpiresIn * 1000);
-
-                // Keycloak names this lifetime refresh_expires_in, while Better Auth
-                // reads refresh_token_expires_in. Without this the account row records
-                // no refresh expiry. The callback writes that row from this same object.
-                tokens.refreshTokenExpiresAt = refreshTokenExpiresAt;
 
                 const context = login.getStore();
 

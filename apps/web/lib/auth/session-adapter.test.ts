@@ -3,6 +3,7 @@ import { genericOAuth, type TestHelpers, testUtils } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { NextRequest } from "next/server";
 import { Pool } from "pg";
 import { afterAll, afterEach, beforeAll, expect, test } from "vitest";
@@ -61,6 +62,11 @@ let providerStatus = 200;
 
 let refreshLifetime = 2_592_000;
 
+let signingKey: Awaited<ReturnType<typeof generateKeyPair>>;
+
+const authorizationCodes = new Map<string, { sid: string; subject: string; nonce: string }>();
+const accessTokenSubjects = new Map<string, string>();
+
 const provider = createServer(async (request, response) => {
   response.setHeader("content-type", "application/json");
 
@@ -68,19 +74,81 @@ const provider = createServer(async (request, response) => {
     response.end(
       JSON.stringify({
         issuer: providerIssuer,
+        authorization_endpoint: `${providerIssuer}/authorize`,
         token_endpoint: `${providerIssuer}/token`,
+        userinfo_endpoint: `${providerIssuer}/userinfo`,
+        jwks_uri: `${providerIssuer}/jwks`,
+        id_token_signing_alg_values_supported: ["RS256"],
       }),
     );
 
     return;
   }
 
-  refreshRequests++;
+  if (request.url === "/jwks") {
+    response.end(
+      JSON.stringify({
+        keys: [
+          { ...(await exportJWK(signingKey.publicKey)), kid: "test", alg: "RS256", use: "sig" },
+        ],
+      }),
+    );
+    return;
+  }
+
+  if (request.url === "/userinfo") {
+    const subject = accessTokenSubjects.get(
+      request.headers.authorization?.replace("Bearer ", "") ?? "",
+    );
+    response.end(
+      JSON.stringify({
+        sub: subject,
+        name: "Test person",
+        email: `${subject}@example.test`,
+        email_verified: true,
+      }),
+    );
+    return;
+  }
+
   let body = "";
 
   for await (const chunk of request) body += chunk;
   const parameters = new URLSearchParams(body);
 
+  if (parameters.get("grant_type") === "authorization_code") {
+    const code = parameters.get("code") ?? "";
+    const claims = authorizationCodes.get(code);
+    authorizationCodes.delete(code);
+    if (!claims) {
+      response.statusCode = 400;
+      response.end(JSON.stringify({ error: "invalid_grant" }));
+      return;
+    }
+    const idToken = await new SignJWT({ sid: claims.sid, nonce: claims.nonce })
+      .setProtectedHeader({ alg: "RS256", kid: "test" })
+      .setIssuer(providerIssuer)
+      .setAudience(config.clientId)
+      .setSubject(claims.subject)
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(signingKey.privateKey);
+    const accessToken = randomUUID();
+    accessTokenSubjects.set(accessToken, claims.subject);
+    response.end(
+      JSON.stringify({
+        access_token: accessToken,
+        refresh_token: randomUUID(),
+        id_token: idToken,
+        token_type: "Bearer",
+        expires_in: 300,
+        refresh_expires_in: refreshLifetime,
+      }),
+    );
+    return;
+  }
+
+  refreshRequests++;
   if (
     request.method !== "POST" ||
     parameters.get("grant_type") !== "refresh_token" ||
@@ -138,6 +206,7 @@ const migrationConfig = {
 };
 
 beforeAll(async () => {
+  signingKey = await generateKeyPair("RS256");
   provider.listen(0, "127.0.0.1");
   await once(provider, "listening");
   const address = z.object({ port: z.number() }).parse(provider.address());
@@ -237,6 +306,8 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
+  authorizationCodes.clear();
+  accessTokenSubjects.clear();
   refreshRequests = 0;
   providerStatus = 200;
   refreshLifetime = 2_592_000;
@@ -572,6 +643,157 @@ async function storedSession(id: string) {
   return row;
 }
 
+test("verified logins keep credentials on each sid and share only the account identity", async () => {
+  const loginAuth = createAuth({ ...config, issuer: providerIssuer }, db);
+  const subject = randomUUID();
+
+  async function signIn(sid: string) {
+    const start = await loginAuth.api.signInSocial({
+      body: { provider: "keycloak", callbackURL: `${baseURL}/budgets` },
+      asResponse: true,
+    });
+    const { url } = await start.json();
+    const authorization = new URL(url);
+    const code = randomUUID();
+    authorizationCodes.set(code, {
+      sid,
+      subject,
+      nonce: authorization.searchParams.get("nonce") ?? "",
+    });
+    const callback = new URL("/api/auth/callback/keycloak", baseURL);
+    callback.searchParams.set("code", code);
+    callback.searchParams.set("state", authorization.searchParams.get("state") ?? "");
+    const response = await loginAuth.handler(
+      new Request(callback, {
+        headers: {
+          cookie: start.headers
+            .getSetCookie()
+            .map((cookie) => cookie.split(";")[0])
+            .join("; "),
+        },
+      }),
+    );
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(`${baseURL}/budgets`);
+    return storedSession(sid);
+  }
+
+  const first = await signIn(randomUUID());
+  const second = await signIn(randomUUID());
+  expect(second.userId).toBe(first.userId);
+  expect(second.accessToken).not.toBe(first.accessToken);
+  expect(second.refreshToken).not.toBe(first.refreshToken);
+  expect(second.idToken).not.toBe(first.idToken);
+  expect(await storedSession(first.id)).toEqual(first);
+
+  const replacement = await signIn(first.id);
+  expect(replacement.refreshToken).not.toBe(first.refreshToken);
+  expect(replacement.token).not.toBe(first.token);
+  expect(await storedSession(second.id)).toEqual(second);
+  expect(replacement.refreshTokenExpiresAt.getTime()).toBeGreaterThan(Date.now() + 2_591_000_000);
+
+  const refresh = createSessionRefresher(db, { ...config, issuer: providerIssuer });
+  const refreshed = await refresh(replacement.token, replacement.accessToken);
+  expect(refreshed.refreshToken).not.toBe(replacement.refreshToken);
+  expect(await storedSession(second.id)).toEqual(second);
+
+  const accounts = await db
+    .select()
+    .from(schema.account)
+    .where(eq(schema.account.userId, first.userId));
+  expect(accounts).toHaveLength(1);
+  expect(accounts[0]).toMatchObject({
+    issuer: providerIssuer,
+    accountId: subject,
+    providerId: "keycloak",
+    userId: first.userId,
+    accessToken: null,
+    refreshToken: null,
+    idToken: null,
+    accessTokenExpiresAt: null,
+    refreshTokenExpiresAt: null,
+    scope: null,
+    password: null,
+  });
+
+  // Direct writes must not bypass the account hooks and retain credentials.
+  await expect(
+    db
+      .update(schema.account)
+      .set({ refreshToken: randomUUID() })
+      .where(eq(schema.account.userId, first.userId)),
+  ).rejects.toMatchObject({ cause: { code: "23514", constraint: "account_no_credentials" } });
+
+  await db.delete(schema.session).where(eq(schema.session.id, first.id));
+  expect(await storedSession(second.id)).toEqual(second);
+  expect(
+    await db.select().from(schema.account).where(eq(schema.account.userId, first.userId)),
+  ).toEqual(accounts);
+});
+
+test("the account cleanup migration preserves identity links and session credentials", async () => {
+  const first = await createSession();
+  const session = await storedSession(first.session.id);
+  const [user] = await db.select().from(schema.user).where(eq(schema.user.id, first.user.id));
+  if (!user) throw new Error("Expected a persisted user");
+  const administrator = new Pool({ connectionString: container.getConnectionUri() });
+  const directory = await mkdtemp(join(tmpdir(), "budget-upgrade-"));
+  let upgradePool: Pool | undefined;
+
+  try {
+    await administrator.query("CREATE DATABASE account_upgrade_test");
+    const url = new URL(container.getConnectionUri());
+    url.pathname = "/account_upgrade_test";
+    upgradePool = new Pool({ connectionString: url.toString() });
+    const upgradeDb = drizzle({ client: upgradePool, schema });
+    await cp(migrationConfig.migrationsFolder, directory, { recursive: true });
+    const journalPath = join(directory, "meta/_journal.json");
+    const journal = JSON.parse(await readFile(journalPath, "utf8"));
+    journal.entries = journal.entries.slice(0, 1);
+    await writeFile(journalPath, JSON.stringify(journal));
+    await migrate(upgradeDb, { ...migrationConfig, migrationsFolder: directory });
+    await upgradeDb.insert(schema.user).values(user);
+    await upgradeDb.insert(schema.session).values(session);
+    const [before] = await upgradeDb
+      .insert(schema.account)
+      .values({
+        id: randomUUID(),
+        issuer: providerIssuer,
+        accountId: session.subject,
+        providerId: "keycloak",
+        userId: user.id,
+        accessToken: randomUUID(),
+        refreshToken: randomUUID(),
+        idToken: randomUUID(),
+        accessTokenExpiresAt: new Date(),
+        refreshTokenExpiresAt: new Date(),
+        scope: "openid",
+        password: randomUUID(),
+      })
+      .returning();
+    await migrate(upgradeDb, migrationConfig);
+    expect(await upgradeDb.select().from(schema.account)).toEqual([
+      {
+        ...before,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        accessTokenExpiresAt: null,
+        refreshTokenExpiresAt: null,
+        scope: null,
+        password: null,
+      },
+    ]);
+    expect(await upgradeDb.select().from(schema.session)).toEqual([session]);
+    expect(await upgradeDb.select().from(schema.user)).toEqual([user]);
+  } finally {
+    await upgradePool?.end();
+    await administrator.query("DROP DATABASE IF EXISTS account_upgrade_test");
+    await administrator.end();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("a failed replacement and a rolled-back transaction retain the previous session", async () => {
   const first = await createSession();
   const second = await createSession();
@@ -628,7 +850,7 @@ test("runtime cannot change schema or migration history, and neither auth role c
   }
 });
 
-test("replaying committed migrations preserves expired token material and records one migration", async () => {
+test("replaying committed migrations preserves expired session tokens without repeating migrations", async () => {
   const { session } = await createSession();
   await pool.query(
     `UPDATE betterauth.session SET
@@ -644,7 +866,7 @@ test("replaying committed migrations preserves expired token material and record
 
   const history = await migrationPool.query("SELECT id FROM betterauth.__drizzle_migrations");
 
-  expect(history.rowCount).toBe(1);
+  expect(history.rowCount).toBe(2);
 });
 
 test("an additive migration preserves sessions while the previous application is still running", async () => {
