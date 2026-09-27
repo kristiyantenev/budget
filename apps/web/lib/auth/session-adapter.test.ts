@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import drizzleConfig from "../../drizzle.config";
 import * as schema from "../../drizzle/schema";
+import { createBudgetingApi } from "../api/budgeting-api";
 import { createAuth } from "./create-auth";
 import { createSessionRefresher, SessionEnded } from "./refresh-session";
 import { createSessionProxy } from "./session-proxy";
@@ -109,6 +110,25 @@ const provider = createServer(async (request, response) => {
   );
 });
 
+let apiURL = "";
+
+let apiStatus = 200;
+
+let apiAuthorization: string | undefined;
+
+// Stands in for the resource server, echoing the stored subject the fixture assigns.
+const api = createServer(async (request, response) => {
+  apiAuthorization = request.headers.authorization;
+  const token = apiAuthorization?.replace(/^Bearer /, "") ?? "";
+  const { rows } = await pool.query<{ subject: string }>(
+    "SELECT subject FROM betterauth.session WHERE access_token = $1",
+    [token],
+  );
+  response.statusCode = apiStatus;
+  response.setHeader("content-type", "application/json");
+  response.end(apiStatus === 200 ? JSON.stringify({ subject: rows[0]?.subject }) : "");
+});
+
 const migrationConfig = {
   migrationsFolder: fileURLToPath(
     new URL(drizzleConfig.out ?? "./drizzle", new URL("../../", import.meta.url)),
@@ -122,6 +142,9 @@ beforeAll(async () => {
   await once(provider, "listening");
   const address = z.object({ port: z.number() }).parse(provider.address());
   providerIssuer = `http://127.0.0.1:${address.port}`;
+  api.listen(0, "127.0.0.1");
+  await once(api, "listening");
+  apiURL = `http://127.0.0.1:${z.object({ port: z.number() }).parse(api.address()).port}`;
   const password = randomBytes(24).toString("hex");
   const migrationPassword = randomBytes(24).toString("hex");
   container = await new PostgreSqlContainer("postgres:17-alpine").start();
@@ -217,6 +240,8 @@ afterEach(async () => {
   refreshRequests = 0;
   providerStatus = 200;
   refreshLifetime = 2_592_000;
+  apiStatus = 200;
+  apiAuthorization = undefined;
 
   if (!helpers) return;
 
@@ -236,6 +261,8 @@ async function createSession() {
 afterAll(async () => {
   provider.closeAllConnections();
   await new Promise<void>((resolve) => provider.close(() => resolve()));
+  api.closeAllConnections();
+  await new Promise<void>((resolve) => api.close(() => resolve()));
   await pool?.end();
   await migrationPool?.end();
   await container?.stop();
@@ -392,6 +419,47 @@ test("an early token refusal uses the same refresh lock and does not spend a rot
 
   expect(refreshRequests).toBe(1);
   expect(new Set(renewed.map((result) => result.accessToken)).size).toBe(1);
+});
+
+test("an access token near expiry is refreshed and committed before the API sees it", async () => {
+  const first = await createSession();
+  await pool.query("UPDATE betterauth.session SET access_token_expires_at = now() WHERE id = $1", [
+    first.session.id,
+  ]);
+  const before = await storedSession(first.session.id);
+  const budgetApi = createBudgetingApi({
+    baseURL: apiURL,
+    refresh: createSessionRefresher(db, { ...config, issuer: providerIssuer }),
+  });
+
+  const outcome = await budgetApi.whoAmI(first.token);
+
+  const stored = await storedSession(first.session.id);
+
+  expect(outcome).toEqual({ status: "ok", matches: true });
+  expect(refreshRequests).toBe(1);
+  expect(stored.accessToken).not.toBe(before.accessToken);
+  expect(apiAuthorization).toBe(`Bearer ${stored.accessToken}`);
+});
+
+test("a 401 and a 403 from the API reach the caller as distinct outcomes and leave the session row unchanged", async () => {
+  const first = await createSession();
+  const before = await storedSession(first.session.id);
+  const budgetApi = createBudgetingApi({
+    baseURL: apiURL,
+    refresh: createSessionRefresher(db, { ...config, issuer: providerIssuer }),
+  });
+
+  apiStatus = 401;
+  const unauthorized = await budgetApi.whoAmI(first.token);
+  apiStatus = 403;
+  const forbidden = await budgetApi.whoAmI(first.token);
+
+  expect(unauthorized).toEqual({ status: "unauthorized" });
+  expect(forbidden).toEqual({ status: "forbidden" });
+  expect(apiAuthorization).toBe(`Bearer ${before.accessToken}`);
+  expect(refreshRequests).toBe(0);
+  expect(await storedSession(first.session.id)).toEqual(before);
 });
 
 test("a temporary provider failure returns 503 without extending or clearing the session", async () => {

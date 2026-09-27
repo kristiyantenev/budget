@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/drizzle/db";
-import { createAuth } from "./auth/create-auth";
+import { AuthConfig, createAuth } from "./auth/create-auth";
+import { createSessionRefresher } from "./auth/refresh-session";
 
 const {
   BETTER_AUTH_URL,
@@ -21,13 +22,15 @@ if (!BUDGET_OIDC_CLIENT_ID) throw new Error("Missing environment variable: BUDGE
 if (!BUDGET_OIDC_CLIENT_SECRET)
   throw new Error("Missing environment variable: BUDGET_OIDC_CLIENT_SECRET");
 
-export const auth: ReturnType<typeof createAuth<[]>> = createAuth(
-  {
-    baseURL: BETTER_AUTH_URL,
-    secret: BETTER_AUTH_SECRET,
-    issuer: BUDGET_OIDC_ISSUER,
-    clientId: BUDGET_OIDC_CLIENT_ID,
-    clientSecret: BUDGET_OIDC_CLIENT_SECRET,
-  },
-  db,
-);
+const config = {
+  baseURL: BETTER_AUTH_URL,
+  secret: BETTER_AUTH_SECRET,
+  issuer: BUDGET_OIDC_ISSUER,
+  clientId: BUDGET_OIDC_CLIENT_ID,
+  clientSecret: BUDGET_OIDC_CLIENT_SECRET,
+} satisfies AuthConfig;
+
+export const auth: ReturnType<typeof createAuth<[]>> = createAuth(config, db);
+
+// ADR-40: the same routine and row lock as proxy maintenance, for the module that calls the API.
+export const refreshSession = createSessionRefresher(db, config);

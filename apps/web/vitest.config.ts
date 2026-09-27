@@ -1,5 +1,8 @@
+import nextEnv from "@next/env";
 import { configDefaults, defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
+
+nextEnv.loadEnvConfig(import.meta.dirname);
 
 export default defineConfig({
   resolve: {
