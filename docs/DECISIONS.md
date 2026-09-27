@@ -9,7 +9,6 @@ Full text lives in the shared ADR project. This table is the index, so a `grep` 
 | ADR-20 | The B1 Budget web session lives in Postgres, not in a cookie                 | web / session          |
 | ADR-21 | Keycloak owns sessions, and we render them in our own UI                     | web / session          |
 | ADR-22 | The B1 Budget session cookie is an opaque reference and caches nothing       | web / session          |
-| ADR-23 | Signing out of B1 Budget signs the user out of BooleanOne                    | web / sign-out         |
 | ADR-24 | Better Auth is the OIDC relying party in B1 Budget webapp                    | web / auth             |
 | ADR-25 | The B1 Budget API trusts the audience, not the caller                        | api / token validation |
 | ADR-26 | A revoked session reaches the API for five minutes                           | api / token validation |
