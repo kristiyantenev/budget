@@ -36,6 +36,24 @@ afterAll(() => pool.end());
 afterEach(() => vi.useRealTimers());
 
 describe("createAuth", () => {
+  test("the session adapter preserves schema validation for the configured custom fields", async () => {
+    const auth = createAuth(config, db);
+    const context = await auth.$context;
+
+    expect(context.checkSchema).toBeTypeOf("function");
+    await context.checkSchema?.();
+  });
+
+  test("schema validation rejects a required issuer column without its custom field", async () => {
+    const auth = createAuth(config, db, { account: { additionalFields: {} } });
+    const context = await auth.$context;
+
+    expect(context.checkSchema).toBeTypeOf("function");
+    await expect(async () => context.checkSchema?.()).rejects.toMatchObject({
+      findings: [{ kind: "unexpected-required-column", table: "account", column: "issuer" }],
+    });
+  });
+
   test("configuration overrides preserve the verified-login guard by default", async () => {
     const auth = createAuth(config, db, {
       plugins: [],

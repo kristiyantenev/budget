@@ -63,12 +63,15 @@ export function sessionAdapter(database: PgDatabase<NodePgQueryResultHKT, typeof
       }),
     })(options);
 
-    return {
-      ...adapter,
-      create: (args) =>
-        args.model === "session" ? sessionWriter.create(args) : adapter.create(args),
-      transaction: (callback) =>
-        database.transaction((transaction) => callback(sessionAdapter(transaction)(options))),
-    };
+    // Better Auth registers schema checks by adapter object identity.
+    // Keep that instance when overriding the session writer and transactions.
+    const create = adapter.create;
+
+    adapter.create = (args) =>
+      args.model === "session" ? sessionWriter.create(args) : create(args);
+    adapter.transaction = (callback) =>
+      database.transaction((transaction) => callback(sessionAdapter(transaction)(options)));
+
+    return adapter;
   };
 }
