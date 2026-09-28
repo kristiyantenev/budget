@@ -12,9 +12,9 @@ BooleanOne product, because most of them outlive the repo that provoked them.
   identity, infrastructure, and other products, so name the product and the subject. A reader
   scanning that list has no idea which repo the decision came from.
 - **Name the ADR key in the code it constrains.** A commit message is found by archaeology, so put
-  the key in a comment at the seam a future reader would otherwise undo: `// ADR-42: the proxy
-refuses; the data access layer verifies.` The commit trailer is the audit trail, not the way
-  anybody discovers the decision exists.
+  the key in a comment at the seam a future reader would otherwise undo:
+  `// ADR-20, ADR-21: each SSO session holds its own token pair, keyed by sid.` The commit trailer
+  is the audit trail, not the way anybody discovers the decision exists.
 
 ## Commits
 
@@ -25,18 +25,19 @@ refuses; the data access layer verifies.` The commit trailer is the audit trail,
 - Commit bodies list 2-5 highlights as bullet points of what the commit changed, not how it was
   built. Keep each under 30 words. Two sharp highlights beat five vague ones, so cut anything that
   does not earn its line.
-- When a commit implements an ADR, close the body with a `Refs: ADR-42` trailer.
+- When a commit implements an ADR, close the body with a `Refs: ADR-20` trailer.
   One trailer per decision. Carry it into the squash message, or the link is lost.
 
 A well-formed commit that adheres to these rules:
 
 ```text
-feat(BUD-123): carry unspent category funds into next month
+feat(BUD-21): add the Postgres auth schema and its first migration
 
-- Unspent funds in a category now roll into next month instead of returning to the pool.
-- Rollover is opt-in per category and stays off for existing budgets.
-- Reallocating a rolled-over amount sends it back to the month it came from.
+- Adds the betterauth schema with user, account, session, and verification tables.
+- The session table is keyed by the Keycloak sid and holds that session's own token pair.
+- Adds db:generate, db:migrate, and db:push scripts.
+- Adds pg and Drizzle ORM for the connection, and Drizzle Kit for migrations.
 
-Refs: ADR-42
-Refs: ADR-37
+Refs: ADR-20
+Refs: ADR-21
 ```
