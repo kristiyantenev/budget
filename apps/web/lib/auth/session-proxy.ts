@@ -20,12 +20,12 @@ export function createSessionProxy(auth: SessionAuth, baseURL: string) {
   return async function sessionProxy(request: NextRequest) {
     const path = request.nextUrl.pathname;
 
+    // ADR-32: the public list is the security control. A path added here skips the session.
     if (path === "/sign-in" || path.startsWith("/api/auth/")) {
       return NextResponse.next();
     }
 
-    // The proxy maintains sessions before rendering; the data layer still
-    // verifies access. See the proxy-session-maintenance draft in docs/DECISIONS.md.
+    // ADR-32: the proxy maintains sessions before rendering; the data layer still verifies access.
     const maintenance = await auth.api.maintainSession({
       headers: request.headers,
       asResponse: true,
