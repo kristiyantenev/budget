@@ -11,8 +11,9 @@ browser never sees.
 ### Resource server
 
 The OAuth 2.0 role `apps/resourceserver` holds behind `api.budget.booleanone.com`. Stateless and
-bearer-only: it validates a token per request, keeps no session, and asks Keycloak nothing at
-request time.
+bearer-only: it validates a token per request and keeps no session. It never introspects a token,
+but it does fetch realm `b1`'s signing keys from Keycloak: on the first request, when its five
+minute key cache expires, and when a token names a key it has not seen.
 
 ### Data access layer (DAL)
 

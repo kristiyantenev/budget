@@ -127,8 +127,13 @@ public class ResourceServerSecurityConfig {
    * drift. {@link SupplierJwtDecoder} defers that discovery call to the first request, which is
    * what lets the pod boot while Keycloak is down.
    *
-   * <p><a href="https://booleanone.atlassian.net/browse/ADR-26">ADR-26</a>: nothing here reaches
-   * Keycloak per request. A signed-out user's access token keeps working until it expires, up to
+   * <p><a href="https://booleanone.atlassian.net/browse/ADR-25">ADR-25</a>: discovery runs once,
+   * but the JWKS does not. Nimbus caches it for five minutes, and fetches it again inside a
+   * request when the cache expires or a token names an unknown {@code kid}. If Keycloak is
+   * unreachable then, the request fails with a 500, not a 401.
+   *
+   * <p><a href="https://booleanone.atlassian.net/browse/ADR-26">ADR-26</a>: nothing here
+   * introspects a token. A signed-out user's access token keeps working until it expires, up to
    * the five minutes realm {@code b1} pins the lifespan to, and the API cannot tell. Closing that
    * window means giving the resource server a datastore, which is a decision, not a patch.
    */
