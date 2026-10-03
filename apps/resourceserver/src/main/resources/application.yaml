@@ -8,4 +8,3 @@ budget:
   token:
     issuer-uri: ${BUDGET_TOKEN_ISSUER_URI:https://accounts.booleanone.com/realms/b1}
     audience: ${BUDGET_TOKEN_AUDIENCE:b1-budget-api}
-    clock-skew: 60s

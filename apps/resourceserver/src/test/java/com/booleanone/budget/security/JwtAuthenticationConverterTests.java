@@ -3,7 +3,6 @@ package com.booleanone.budget.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -20,7 +19,7 @@ class JwtAuthenticationConverterTests {
 
   private final JwtAuthenticationConverter converter = new ResourceServerSecurityConfig()
       .jwtAuthenticationConverter(new TokenProperties(
-          "https://issuer.example/realms/b1", "b1-budget-api", Duration.ofSeconds(60)));
+          "https://issuer.example/realms/b1", "b1-budget-api"));
 
   @Test
   void mapsClientRolesAndScopesWithoutUsingIdentityOrOtherClientsAsAuthority() {

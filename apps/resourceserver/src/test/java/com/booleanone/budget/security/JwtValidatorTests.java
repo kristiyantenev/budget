@@ -3,7 +3,6 @@ package com.booleanone.budget.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -23,7 +22,7 @@ class JwtValidatorTests {
   private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
   private final OAuth2TokenValidator<Jwt> validator = ResourceServerSecurityConfig.jwtValidator(
-      new TokenProperties(ISSUER, "b1-budget-api", Duration.ofSeconds(60)), CLOCK);
+      new TokenProperties(ISSUER, "b1-budget-api"), CLOCK);
 
   @Test
   void acceptsBudgetClaimsWithoutAuthorizedParty() {
@@ -58,7 +57,7 @@ class JwtValidatorTests {
   @Test
   void usesTheConfiguredAudience() {
     var configured = ResourceServerSecurityConfig.jwtValidator(
-        new TokenProperties(ISSUER, "local-budget-api", Duration.ofSeconds(60)), CLOCK);
+        new TokenProperties(ISSUER, "local-budget-api"), CLOCK);
 
     assertThat(configured.validate(token().audience(List.of("local-budget-api")).build())
         .hasErrors()).isFalse();
@@ -111,13 +110,12 @@ class JwtValidatorTests {
   }
 
   @Test
-  void usesConfiguredSkewInsteadOfAddingAnotherDefaultTimestampValidator() {
-    var configured = ResourceServerSecurityConfig.jwtValidator(
-        new TokenProperties(ISSUER, "b1-budget-api", Duration.ofSeconds(90)), CLOCK);
-    Jwt jwt = token().expiresAt(NOW.minusSeconds(75)).build();
+  void usesTheFixedClockInsteadOfAddingAnotherDefaultTimestampValidator() {
+    // A second, default timestamp validator would read the system clock, where this token has
+    // long expired.
+    Jwt jwt = token().expiresAt(NOW.plusSeconds(1)).build();
 
-    assertThat(configured.validate(jwt).hasErrors()).isFalse();
-    assertThat(this.validator.validate(jwt).hasErrors()).isTrue();
+    assertThat(this.validator.validate(jwt).hasErrors()).isFalse();
   }
 
   @Test

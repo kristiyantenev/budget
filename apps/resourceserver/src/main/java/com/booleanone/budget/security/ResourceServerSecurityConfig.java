@@ -1,6 +1,7 @@
 package com.booleanone.budget.security;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +44,10 @@ import org.springframework.util.StringUtils;
 @EnableMethodSecurity
 @EnableConfigurationProperties({TokenProperties.class, ResourceProperties.class})
 public class ResourceServerSecurityConfig {
+
+  // ADR-25: 60 seconds in every environment. A constant, not a property, because relaxed binding
+  // would make a property overridable per environment. Changing it means revisiting the ADR.
+  private static final Duration CLOCK_SKEW = Duration.ofSeconds(60);
 
   /**
    * Turns a validated token into authority and a principal.
@@ -154,7 +159,7 @@ public class ResourceServerSecurityConfig {
    * one that applies.
    */
   static OAuth2TokenValidator<Jwt> jwtValidator(TokenProperties token, Clock clock) {
-    JwtTimestampValidator timestamps = new JwtTimestampValidator(token.clockSkew());
+    JwtTimestampValidator timestamps = new JwtTimestampValidator(CLOCK_SKEW);
     timestamps.setClock(clock);
     final List<OAuth2TokenValidator<Jwt>> tokenValidators = new ArrayList<>(Arrays.asList(
         timestamps,
