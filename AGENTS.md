@@ -37,6 +37,7 @@ pnpm lint    # lint every package, both languages
 
 - **Secrets.** Development secrets live in OpenBao at `vault.booleanone.com` and reach the app as
   environment variables. The repo holds references, never values, and that includes commit messages.
+  TruffleHog scans commit messages in the `commit-msg` hook and again in CI, alongside every committed file.
 
 - **Auth.** Keycloak at `accounts.booleanone.com` is the identity provider for every BooleanOne
   product, so keep B1 Budget assumptions out of it. Never store OAuth tokens in browser local

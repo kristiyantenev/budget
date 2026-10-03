@@ -1,0 +1,11 @@
+if ! command -v trufflehog >/dev/null 2>&1; then
+  echo "commit-msg: trufflehog not installed, commit message not scanned for secrets" >&2
+  exit 0
+fi
+
+# Scans the draft commit message for secrets. 
+trufflehog filesystem "$1" \
+  --no-update \
+  --no-verification \
+  --config=.trufflehog/config.yaml \
+  --fail

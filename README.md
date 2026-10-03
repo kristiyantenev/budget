@@ -58,7 +58,7 @@ One command covers both languages because Turbo drives the whole repo. The Java 
 regular Gradle project with a small `package.json` that lets Turbo see it, so you can also drop
 into `apps/resourceserver` and run `./gradlew` directly when you want a task Turbo does not expose.
 
-The commit hook runs Oxlint fixes followed by Oxfmt on staged JavaScript and TypeScript, Oxfmt on other supported staged files, and Checkstyle on the whole Java source sets whenever a `.java` or `.kts` file is staged. Lint violations block the commit.
+The commit hook runs Oxlint fixes followed by Oxfmt on staged JavaScript and TypeScript, Oxfmt on other supported staged files, and Checkstyle on the whole Java source sets whenever a `.java` or `.kts` file is staged. Lint violations block the commit. A second hook scans the commit message for secrets with TruffleHog when it is installed, and warns when it is not.
 
 ## Layout
 

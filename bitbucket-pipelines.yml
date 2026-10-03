@@ -1,24 +1,51 @@
+definitions:
+  steps:
+    - step: &secret-scan
+        name: Secret scan (TruffleHog)
+        image: trufflesecurity/trufflehog:3.95.9
+        clone:
+          depth: full
+        script:
+          - git config --global --add safe.directory "$BITBUCKET_CLONE_DIR"
+          # Scans every commit reachable from HEAD, so a secret added and
+          # removed again within a pull request still fails the build. A full
+          # clone keeps that history complete. --fail exits 183 on any
+          # finding. Findings print to the build log rather than an artifact,
+          # so a committed secret is never copied into downloadable build
+          # output.
+          - |
+            trufflehog git "file://$BITBUCKET_CLONE_DIR" \
+              --branch=HEAD \
+              --no-update \
+              --no-verification \
+              --exclude-paths=.trufflehog/excluded-paths \
+              --config=.trufflehog/config.yaml \
+              --force-skip-binaries \
+              --force-skip-archives \
+              --fail \
+              ${TRUFFLEHOG_EXTRA_ARGS}
+          # The git scan reads file contents only, so commit messages get a
+          # scan of their own. The file sits outside the clone so it never
+          # becomes part of the tree.
+          - git log --format='%H%n%B' HEAD > /tmp/commit-messages.txt
+          - |
+            trufflehog filesystem /tmp/commit-messages.txt \
+              --no-update \
+              --no-verification \
+              --config=.trufflehog/config.yaml \
+              --fail \
+              ${TRUFFLEHOG_EXTRA_ARGS}
+
 pipelines:
+  # Direct pushes to main skip pull-request pipelines, so main is scanned on
+  # its own.
+  branches:
+    main:
+      - step: *secret-scan
   pull-requests:
     "**":
       - parallel:
-          - step:
-              name: Secret scan (TruffleHog)
-              image: trufflesecurity/trufflehog:3.95.9
-              script:
-                # --fail exits 183 on any finding. Findings print to the build
-                # log rather than an artifact, so a committed secret is never
-                # copied into downloadable build output.
-                - |
-                  trufflehog filesystem "$BITBUCKET_CLONE_DIR" \
-                    --no-update \
-                    --no-verification \
-                    --exclude-paths=.trufflehog/excluded-paths \
-                    --config=.trufflehog/config.yaml \
-                    --force-skip-binaries \
-                    --force-skip-archives \
-                    --fail \
-                    ${TRUFFLEHOG_EXTRA_ARGS}
+          - step: *secret-scan
 
           - step:
               name: SAST (Semgrep)
