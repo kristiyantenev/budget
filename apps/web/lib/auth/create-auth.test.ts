@@ -33,7 +33,11 @@ const db = drizzle({ client: pool, schema });
 
 afterAll(() => pool.end());
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("createAuth", () => {
   test("the session adapter preserves schema validation for the configured custom fields", async () => {
@@ -116,6 +120,74 @@ describe("createAuth", () => {
     } finally {
       await helpers.deleteUser(user.id);
     }
+  });
+});
+
+function memory() {
+  return memoryAdapter({
+    user: [],
+    session: [],
+    account: [],
+    verification: [],
+  });
+}
+
+function discoveryDocument(discoveredIssuer: string) {
+  return Response.json({
+    issuer: discoveredIssuer,
+    authorization_endpoint: `${discoveredIssuer}/protocol/openid-connect/auth`,
+    token_endpoint: `${discoveredIssuer}/protocol/openid-connect/token`,
+    jwks_uri: `${discoveredIssuer}/protocol/openid-connect/certs`,
+    id_token_signing_alg_values_supported: ["RS256"],
+  });
+}
+
+function signIn(auth: ReturnType<typeof createAuth<[]>>) {
+  return auth.api.signInSocial({
+    headers: new Headers(),
+    body: { provider: "keycloak", callbackURL: "/" },
+  });
+}
+
+describe("createAuth discovery", () => {
+  test("sign-in recovers without a restart when Keycloak was down at start", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetch = vi.fn<() => Promise<Response>>(async () => new Response(null, { status: 503 }));
+    vi.stubGlobal("fetch", fetch);
+
+    const auth = createAuth(config, db, { database: memory() });
+
+    await expect(signIn(auth)).rejects.toThrow();
+    expect(error).toHaveBeenCalledWith(
+      "Keycloak discovery failed; sign-in is unavailable until it succeeds",
+    );
+
+    fetch.mockImplementation(async () => discoveryDocument(issuer));
+
+    await expect(signIn(auth)).rejects.toThrow();
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(Date.now() + 30_000);
+
+    const { url } = await signIn(auth);
+
+    expect(url).toMatch(new RegExp(`^${issuer}/protocol/openid-connect/auth\\?`));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test("a discovery document that names another issuer leaves sign-in unavailable", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<() => Promise<Response>>(async () =>
+        discoveryDocument("https://elsewhere.example/realms/b1"),
+      ),
+    );
+
+    const auth = createAuth(config, db, { database: memory() });
+
+    await expect(signIn(auth)).rejects.toThrow();
   });
 });
 

@@ -27,6 +27,8 @@ const hidden = {
 
 const hiddenDate = { ...hidden, type: "date" } as const;
 
+const discoveryRetryInterval = 30_000;
+
 // ADR-21, ADR-24: accounts link identities; each sid owns its credentials.
 const accountWithoutCredentials = {
   accessToken: null,
@@ -73,6 +75,83 @@ export function createAuth<const Plugins extends BetterAuthPlugin[] = []>(
       idTokenExpiresAt: Date;
     };
   }>();
+
+  let discovery: "pending" | "succeeded" | "failed" = "pending";
+  let retryAt = 0;
+
+  // ADR-24: Better Auth checks the ID token issuer against discovery, so discovery must name ours.
+  function keycloakProvider() {
+    const plugin = genericOAuth({
+      config: [
+        {
+          providerId: "keycloak",
+          discoveryUrl: `${config.issuer}/.well-known/openid-configuration`,
+          clientId: config.clientId,
+          clientSecret: config.clientSecret,
+          pkce: true,
+          requireIdTokenVerification: true,
+          scopes: ["openid", "profile", "email", "budget"],
+          accountSubject: ({ tokens }) => {
+            // Better Auth verifies signature, issuer, audience and nonce before calling this hook.
+            if (
+              !tokens.idToken ||
+              !tokens.accessToken ||
+              !tokens.refreshToken ||
+              !tokens.accessTokenExpiresAt
+            ) {
+              throw new Error("Incomplete Keycloak token response");
+            }
+
+            const claims = keycloakSessionClaims.parse(decodeJwt(tokens.idToken));
+
+            const refreshExpiresIn = refreshLifetime.parse(tokens.raw?.refresh_expires_in);
+
+            const refreshTokenExpiresAt = new Date(Date.now() + refreshExpiresIn * 1000);
+
+            const context = login.getStore();
+
+            if (!context) {
+              throw new Error("Incomplete Keycloak session claims");
+            }
+
+            // ADR-20, ADR-21: each SSO session holds its own token pair, keyed by sid.
+            context.session = {
+              id: claims.sid,
+              subject: claims.sub,
+              accessToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken,
+              idToken: tokens.idToken,
+              accessTokenExpiresAt: tokens.accessTokenExpiresAt,
+              refreshTokenExpiresAt,
+              idTokenExpiresAt: new Date(claims.exp * 1000),
+            };
+
+            return claims.sub;
+          },
+        },
+      ],
+    });
+
+    return {
+      ...plugin,
+      init: async (ctx: Parameters<typeof plugin.init>[0]) => {
+        const result = await plugin.init(ctx);
+        const providers = result.context.socialProviders.filter(
+          (provider) => provider.id !== "keycloak" || provider.issuer === config.issuer,
+        );
+
+        if (providers.some((provider) => provider.id === "keycloak")) {
+          discovery = "succeeded";
+        } else {
+          discovery = "failed";
+          retryAt = Date.now() + discoveryRetryInterval;
+          console.error("Keycloak discovery failed; sign-in is unavailable until it succeeds");
+        }
+
+        return { context: { socialProviders: providers } };
+      },
+    };
+  }
 
   // ADR-19, ADR-24: Next is the relying party; Keycloak owns identity.
   const authOptions: AuthOptions<Plugins> = {
@@ -141,80 +220,49 @@ export function createAuth<const Plugins extends BetterAuthPlugin[] = []>(
     // Options replace top-level defaults, including the provider plugins.
     ...options,
     plugins: [
-      ...(options.plugins ?? [
-        genericOAuth({
-          config: [
-            {
-              providerId: "keycloak",
-              discoveryUrl: `${config.issuer}/.well-known/openid-configuration`,
-              clientId: config.clientId,
-              clientSecret: config.clientSecret,
-              pkce: true,
-              requireIdTokenVerification: true,
-              scopes: ["openid", "profile", "email", "budget"],
-              accountSubject: ({ tokens }) => {
-                // Better Auth verifies signature, issuer, audience and nonce before calling this hook.
-                if (
-                  !tokens.idToken ||
-                  !tokens.accessToken ||
-                  !tokens.refreshToken ||
-                  !tokens.accessTokenExpiresAt
-                ) {
-                  throw new Error("Incomplete Keycloak token response");
-                }
-
-                const claims = keycloakSessionClaims.parse(decodeJwt(tokens.idToken));
-
-                const refreshExpiresIn = refreshLifetime.parse(tokens.raw?.refresh_expires_in);
-
-                const refreshTokenExpiresAt = new Date(Date.now() + refreshExpiresIn * 1000);
-
-                const context = login.getStore();
-
-                if (!context) {
-                  throw new Error("Incomplete Keycloak session claims");
-                }
-
-                // ADR-20, ADR-21: each SSO session holds its own token pair, keyed by sid.
-                context.session = {
-                  id: claims.sid,
-                  subject: claims.sub,
-                  accessToken: tokens.accessToken,
-                  refreshToken: tokens.refreshToken,
-                  idToken: tokens.idToken,
-                  accessTokenExpiresAt: tokens.accessTokenExpiresAt,
-                  refreshTokenExpiresAt,
-                  idTokenExpiresAt: new Date(claims.exp * 1000),
-                };
-
-                return claims.sub;
-              },
-            },
-          ],
-        }),
-      ]),
+      ...(options.plugins ?? [keycloakProvider()]),
       sessionMaintenance(createSessionRefresher(database, config)),
       nextCookies(),
     ] as const,
   };
 
-  const auth: ReturnType<typeof betterAuth<typeof authOptions>> = betterAuth(authOptions);
+  let auth: ReturnType<typeof betterAuth<typeof authOptions>> = betterAuth(authOptions);
+
+  // ADR-32: Better Auth discovers once per instance and drops a provider it could not discover,
+  // so a Keycloak outage at start would break sign-in until restart. Rebuild until it succeeds.
+  function current() {
+    if (discovery === "failed" && Date.now() >= retryAt) {
+      discovery = "pending";
+      auth = betterAuth(authOptions);
+    }
+
+    return auth;
+  }
+
+  const handler = async (request: Request) => {
+    const path = new URL(request.url).pathname;
+
+    // ADR-21, ADR-40: no local revocation, token reads, or library-driven refresh over HTTP.
+    if (request.method !== "GET" || path !== "/api/auth/callback/keycloak") {
+      return new Response(null, { status: 404 });
+    }
+
+    const response = await login.run({}, () => current().handler(request));
+    response.headers.set("cache-control", "no-store");
+
+    return response;
+  };
 
   const instance: typeof auth = {
     ...auth,
-    handler: async (request: Request) => {
-      const path = new URL(request.url).pathname;
-
-      // ADR-21, ADR-40: no local revocation, token reads, or library-driven refresh over HTTP.
-      if (request.method !== "GET" || path !== "/api/auth/callback/keycloak") {
-        return new Response(null, { status: 404 });
-      }
-
-      const response = await login.run({}, () => auth.handler(request));
-      response.headers.set("cache-control", "no-store");
-
-      return response;
+    get api() {
+      return current().api;
     },
+    get $context() {
+      return current().$context;
+    },
+    handler,
+    fetch: handler,
   };
 
   return instance;
