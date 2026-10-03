@@ -40,7 +40,7 @@ class JwtValidatorTests {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"aud", "iss", "sub"})
+  @ValueSource(strings = {"aud", "iss", "sub", "exp"})
   void rejectsMissingRequiredClaim(String claim) {
     Jwt jwt = token().claims(claims -> claims.remove(claim)).build();
 

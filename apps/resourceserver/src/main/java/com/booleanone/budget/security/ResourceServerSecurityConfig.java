@@ -133,9 +133,10 @@ public class ResourceServerSecurityConfig {
    * unreachable then, the request fails with a 500, not a 401.
    *
    * <p><a href="https://booleanone.atlassian.net/browse/ADR-26">ADR-26</a>: nothing here
-   * introspects a token. A signed-out user's access token keeps working until it expires, up to
-   * the five minutes realm {@code b1} pins the lifespan to, and the API cannot tell. Closing that
-   * window means giving the resource server a datastore, which is a decision, not a patch.
+   * introspects a token. A signed-out user's access token keeps working until it expires, and the
+   * API cannot tell. The window is the five minutes realm {@code b1} pins the lifespan to, plus the
+   * 60 seconds of clock skew, so six minutes in all. Closing it means giving the resource server a
+   * datastore, which is a decision, not a patch.
    */
   @Bean
   JwtDecoder jwtDecoder(TokenProperties token) {
@@ -166,6 +167,9 @@ public class ResourceServerSecurityConfig {
   static OAuth2TokenValidator<Jwt> jwtValidator(TokenProperties token, Clock clock) {
     JwtTimestampValidator timestamps = new JwtTimestampValidator(CLOCK_SKEW);
     timestamps.setClock(clock);
+    // ADR-26: a token without exp would never expire, so the revocation window would have no end.
+    // Spring accepts one by default; refuse it rather than trust Keycloak to always set it.
+    timestamps.setAllowEmptyExpiryClaim(false);
     final List<OAuth2TokenValidator<Jwt>> tokenValidators = new ArrayList<>(Arrays.asList(
         timestamps,
         new JwtIssuerValidator(token.issuerUri()),
