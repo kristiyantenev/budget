@@ -1,4 +1,5 @@
 [versions]
+java = "25"
 spring-boot = "4.1.0"
 dependency-management = "1.1.7"
 checkstyle = "14.0.0"
@@ -7,6 +8,10 @@ lombok = "1.18.46"
 [libraries]
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-security-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

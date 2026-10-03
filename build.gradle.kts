@@ -31,7 +31,7 @@ subprojects {
 
     extensions.configure<JavaPluginExtension> {
       toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(rootProject.libs.versions.java.get().toInt()))
       }
     }
 
