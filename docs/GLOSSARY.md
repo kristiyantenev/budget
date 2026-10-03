@@ -32,8 +32,23 @@ or an arbitrary forwarded path is not this, and a forwarded path is an open prox
 the user's token.
 
 Not every Route Handler under `apps/web/app/api` is one. The OIDC callback handler belongs to
-authentication, carries no product data, and forwards nothing to the API. Neither is `proxy.ts`,
-the Next.js request interceptor, which shares the word "proxy" but forwards nothing either.
+authentication, carries no product data, and forwards nothing to the API. Neither is the Proxy,
+which shares the word but forwards nothing either.
+
+### Proxy
+
+The Next.js request interceptor in `apps/web/proxy.ts`. It runs before a request renders, maintains
+the B1 Budget session, and redirects a caller without a live session to sign-in. It forwards nothing
+to the API and carries no product data. The data access layer still verifies access after it.
+
+It is not a Proxy Route Handler, which moves bytes to the API.
+
+### Public list
+
+The paths the Proxy lets through without maintaining a session: `/sign-in` and `/api/auth/*`. A path
+on it gets no session check from the Proxy, so a path belongs there only when it must be reachable by a caller who has no session.
+
+A page that merely needs no product data is not on it. The Proxy still maintains the session there.
 
 ## Identity
 
@@ -118,6 +133,15 @@ nothing about it looks broken from outside.
 
 It is not a refresh that failed. A failed refresh leaves the old pair spendable and can be retried.
 This one cannot, and it recovers only through a fresh authorization code exchange.
+
+### Session recovery cookie
+
+The `budget.session-recovery` cookie. The Proxy sets it for 60 seconds when it sends a caller whose
+session has ended through a silent SSO login (`prompt=none`), and it refuses a second silent login
+while the cookie is present. It is what makes recovery happen once, so a caller with a dead SSO
+session lands on sign-in instead of looping.
+
+It is not a session and holds no identity. Its value is always `1`.
 
 ### RP-initiated logout
 

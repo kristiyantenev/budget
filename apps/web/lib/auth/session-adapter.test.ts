@@ -469,7 +469,7 @@ test("anonymous requests redirect to sign-in while public routes remain accessib
   expect(destination.searchParams.get("returnTo")).toBe("/budgets?month=2026-09");
   expect(refreshRequests).toBe(0);
 
-  for (const path of ["/sign-in", "/api/auth/callback/keycloak", "/healthz"]) {
+  for (const path of ["/sign-in", "/api/auth/callback/keycloak"]) {
     const publicResponse = await proxy(new NextRequest(`${baseURL}${path}`));
     expect(publicResponse.headers.get("x-middleware-next")).toBe("1");
   }

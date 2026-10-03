@@ -20,7 +20,7 @@ export function createSessionProxy(auth: SessionAuth, baseURL: string) {
   return async function sessionProxy(request: NextRequest) {
     const path = request.nextUrl.pathname;
 
-    if (path === "/sign-in" || path.startsWith("/api/auth/") || path === "/healthz") {
+    if (path === "/sign-in" || path.startsWith("/api/auth/")) {
       return NextResponse.next();
     }
 
