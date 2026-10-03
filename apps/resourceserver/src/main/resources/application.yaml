@@ -2,6 +2,11 @@ spring:
   application:
     name: b1-budget-resourceserver
 
+# spring.security.oauth2.resourceserver.jwt.* is absent on purpose, and setting any of it does
+# nothing, silently. ResourceServerSecurityConfig publishes its own JwtDecoder (ADR-25) and
+# JwtAuthenticationConverter (ADR-27), so Boot backs off from both the decoder properties
+# (issuer-uri, jwk-set-uri, audiences) and the converter properties (authorities-claim-*,
+# authority-prefix, principal-claim-name). The token gate is budget.token.* below.
 budget:
   resource:
     uri: ${BUDGET_RESOURCE_URI:https://api.budget.booleanone.com}
