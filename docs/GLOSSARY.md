@@ -31,6 +31,10 @@ Actions, and it is not a general-purpose proxy. A handler that carries product d
 or an arbitrary forwarded path is not this, and a forwarded path is an open proxy to the API holding
 the user's token.
 
+Not every Route Handler under `apps/web/app/api` is one. The OIDC callback handler belongs to
+authentication, carries no product data, and forwards nothing to the API. Neither is `proxy.ts`,
+the Next.js request interceptor, which shares the word "proxy" but forwards nothing either.
+
 ## Identity
 
 ### Realm `b1`
@@ -69,7 +73,8 @@ native mobile app run it without a secret.
 ### Role
 
 A named permission grant defined as a client role on `b1-budget-api`. Roles attach to what a
-person may do, never to who they are.
+person may do, never to who they are. The API reads roles from the `resource_access` entry whose key
+is the configured token audience, so the audience and the role client id are the same value.
 
 ### Scope
 

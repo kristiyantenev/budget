@@ -30,15 +30,16 @@ pnpm dev
 
 The web app comes up on http://localhost:3000 and the API on http://localhost:8080. The API is
 bearer-only, so `/me` answers 401 until you send it a token that realm `b1` minted for
-`b1-budget-api`. Spring also publishes public protected resource metadata at
+`b1-budget-api`, and 403 if that token lacks the `budget-user` role or the `budget` scope. Spring also publishes public protected resource metadata at
 `/.well-known/oauth-protected-resource`. The API discovers Keycloak's signing keys on the first
 request carrying a bearer token rather than at startup, which means it comes up whether or not
 `accounts.booleanone.com` is reachable.
 
-Set `BUDGET_TOKEN_ISSUER_URI` and `BUDGET_TOKEN_AUDIENCE` before `pnpm dev` to override the token
-issuer and audience for local development. Set `BUDGET_RESOURCE_URI=http://localhost:8080` so
-public metadata and authentication challenges use the local API address. Turbo passes these
-variables to the resource server.
+Local development uses the live realm `b1` and audience `b1-budget-api`, which are the defaults
+(ADR-28), so you do not override them. Set `BUDGET_RESOURCE_URI=http://localhost:8080` before
+`pnpm dev` so public metadata and authentication challenges use the local API address. Turbo passes
+it to the resource server. `BUDGET_TOKEN_ISSUER_URI` and `BUDGET_TOKEN_AUDIENCE` exist for tests and
+deployments.
 
 You do not need Gradle installed. The repo ships the Gradle wrapper, and `pnpm` drives it for you.
 
@@ -57,7 +58,7 @@ One command covers both languages because Turbo drives the whole repo. The Java 
 regular Gradle project with a small `package.json` that lets Turbo see it, so you can also drop
 into `apps/resourceserver` and run `./gradlew` directly when you want a task Turbo does not expose.
 
-The commit hook runs Oxlint fixes followed by Oxfmt on staged JavaScript and TypeScript, Oxfmt on other supported staged files, and Checkstyle on staged Java changes. Lint violations block the commit.
+The commit hook runs Oxlint fixes followed by Oxfmt on staged JavaScript and TypeScript, Oxfmt on other supported staged files, and Checkstyle on the whole Java source sets whenever a `.java` or `.kts` file is staged. Lint violations block the commit.
 
 ## Layout
 

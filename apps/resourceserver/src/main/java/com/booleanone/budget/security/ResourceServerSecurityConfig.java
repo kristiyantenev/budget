@@ -105,9 +105,6 @@ public class ResourceServerSecurityConfig {
    * <p>The bean is named {@code oauth2} rather than after its type, because the name is what the
    * expression language sees.
    *
-   * <p><a href="https://booleanone.atlassian.net/browse/ADR-27">ADR-27</a>: a scope is what
-   * Keycloak lets a client ask for on a person's behalf, and a role is what the person may do.
-   *
    * <p>It returns an {@link org.springframework.security.authorization.AuthorizationManager}, not
    * a boolean, so an expression using it cannot also call {@code hasRole}: mixing the two fails to
    * evaluate at runtime.

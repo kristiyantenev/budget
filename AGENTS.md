@@ -13,12 +13,12 @@ language.
 ```bash
 # From the repo root
 pnpm build   # build every package, both languages
-pnpm test    # test every package, both languages
+pnpm test    # run every test suite
 pnpm dev     # run the web dev server and the API together
 pnpm lint    # lint every package, both languages
 
 # JVM tasks Turbo does not expose, via the Gradle wrapper
-./gradlew :apps:resourceserver:test --tests "BudgetApplicationTests"   # run a single test
+./gradlew :apps:resourceserver:test --tests "JwtValidatorTests"   # run a single test
 ```
 
 ## Monorepo map
