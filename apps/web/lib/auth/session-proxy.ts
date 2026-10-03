@@ -8,6 +8,9 @@ type SessionAuth = {
   $context: Promise<Pick<Awaited<ReturnType<typeof createAuth<[]>>["$context"]>, "authCookies">>;
 };
 
+// ADR-36: the destination the render redirects to if the session ends after the proxy saw it.
+export const RETURN_TO_HEADER = "x-budget-return-to";
+
 function copyCookies(source: Headers, response: NextResponse) {
   for (const header of source.getSetCookie()) {
     for (const [name, cookie] of parseSetCookieHeader(header)) {
@@ -39,12 +42,15 @@ export function createSessionProxy(auth: SessionAuth, baseURL: string) {
     }
 
     const active = await maintenance.json();
+    const returnTo = `${path}${request.nextUrl.search}`;
     let response: NextResponse;
 
     if (active) {
-      response = NextResponse.next();
+      // Set on every request, so a value the browser sent never reaches the render.
+      const forwarded = new Headers(request.headers);
+      forwarded.set(RETURN_TO_HEADER, returnTo);
+      response = NextResponse.next({ request: { headers: forwarded } });
     } else {
-      const returnTo = `${path}${request.nextUrl.search}`;
       const callback = new URL(baseURL);
       callback.pathname = path;
       callback.search = request.nextUrl.search;

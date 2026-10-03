@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { createBudgetingApi } from "./api/budgeting-api";
 import { auth, refreshSession } from "./auth";
+import { RETURN_TO_HEADER } from "./auth/session-proxy";
 
 const { BUDGET_API_URL } = process.env;
 
@@ -13,9 +14,16 @@ const budgetingApi = createBudgetingApi({ baseURL: BUDGET_API_URL, refresh: refr
 
 // ADR-32: the proxy maintains the session, and the data access layer still verifies it.
 const verifiedSession = cache(async () => {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const requestHeaders = await headers();
+  const session = await auth.api.getSession({ headers: requestHeaders });
 
-  if (!session) redirect("/sign-in");
+  // ADR-36: reached only when the session ends between the proxy and the render, which is
+  // still an interruption. The sign-in page checks returnTo, so this does not.
+  if (!session) {
+    const signIn = new URLSearchParams({ reason: "expired" });
+    signIn.set("returnTo", requestHeaders.get(RETURN_TO_HEADER) ?? "/");
+    redirect(`/sign-in?${signIn}`);
+  }
 
   return session;
 });
