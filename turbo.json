@@ -25,6 +25,7 @@
         "BETTER_AUTH_URL",
         "BETTER_AUTH_SECRET",
         "BUDGET_OIDC_ISSUER",
+        "BUDGET_OIDC_CLIENT_ID",
         "BUDGET_OIDC_CLIENT_SECRET",
         "BUDGET_DATABASE_URL",
         "BUDGET_API_URL"
@@ -45,7 +46,8 @@
         "BETTER_AUTH_SECRET",
         "BUDGET_OIDC_ISSUER",
         "BUDGET_OIDC_CLIENT_ID",
-        "BUDGET_OIDC_CLIENT_SECRET"
+        "BUDGET_OIDC_CLIENT_SECRET",
+        "BUDGET_DATABASE_URL"
       ]
     },
     "lint": {
