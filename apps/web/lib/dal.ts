@@ -18,7 +18,7 @@ const verifiedSession = cache(async () => {
   const session = await auth.api.getSession({ headers: requestHeaders });
 
   // ADR-36: reached only when the session ends between the proxy and the render, which is
-  // still an interruption. The sign-in page checks returnTo, so this does not.
+  // still an interruption. The sign-in action checks returnTo, so this does not.
   if (!session) {
     const signIn = new URLSearchParams({ reason: "expired" });
     signIn.set("returnTo", requestHeaders.get(RETURN_TO_HEADER) ?? "/");
@@ -28,7 +28,8 @@ const verifiedSession = cache(async () => {
   return session;
 });
 
-// Only what a page may render. The session token and the stored tokens stay here.
+// Only what a page may render. The session token stays here, and the stored tokens never reach
+// this layer.
 export async function signedInPerson() {
   const { user } = await verifiedSession();
 

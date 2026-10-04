@@ -35,9 +35,13 @@ pnpm lint    # lint every package, both languages
 - **Dependency versions.** Every JVM version lives in `gradle/libs.versions.toml`, reached through a
   `libs.` accessor. A version string in a `build.gradle.kts` is a bug.
 
+- **Configuration.** Never hard-code a production domain in application logic. Domains reach the
+  code through environment variables and typed configuration.
+
 - **Secrets.** Development secrets live in OpenBao at `vault.booleanone.com` and reach the app as
   environment variables. The repo holds references, never values, and that includes commit messages.
-  TruffleHog scans commit messages in the `commit-msg` hook and again in CI, alongside every committed file.
+  The `commit-msg` hook scans the message with TruffleHog when it is installed, and only warns when it
+  is not. CI scans every commit message and committed file on pull requests and on `main`.
 
 - **Auth.** Keycloak at `accounts.booleanone.com` is the identity provider for every BooleanOne
   product, so keep B1 Budget assumptions out of it. Never store OAuth tokens in browser local
@@ -53,7 +57,8 @@ To understand more about ADRs, refer to
 [CONTRIBUTING.md, Architecture decisions](CONTRIBUTING.md#architecture-decisions).
 
 Do not work around a decision, and say so if the task requires contradicting it. If you take a new
-decision that belongs there, add the row when the ADR is written, not later.
+decision that belongs there, add the row when the ADR is written, not later. When an ADR is
+retitled, update its row in the same change, so the index never states an option the ADR rejects.
 
 ## Git
 

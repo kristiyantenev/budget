@@ -38,7 +38,7 @@ request carrying a bearer token rather than at startup, which means it comes up 
 Local development uses the live realm `b1` and audience `b1-budget-api`, which are the defaults
 (ADR-28), so you do not override them. Set `BUDGET_RESOURCE_URI=http://localhost:8080` before
 `pnpm dev` so public metadata and authentication challenges use the local API address. Turbo passes
-it to the resource server. `BUDGET_TOKEN_ISSUER_URI` and `BUDGET_TOKEN_AUDIENCE` exist for tests and
+it to the resource server. `BUDGET_TOKEN_ISSUER_URI` and `BUDGET_TOKEN_AUDIENCE` exist for
 deployments.
 
 You do not need Gradle installed. The repo ships the Gradle wrapper, and `pnpm` drives it for you.

@@ -17,8 +17,7 @@ prose, UI copy, and ADR titles. Resource server is the OAuth role it plays.
 
 The OAuth 2.0 role `apps/resourceserver` holds behind `api.budget.booleanone.com`. Stateless and
 bearer-only: it validates a token per request and keeps no session. It never introspects a token,
-but it does fetch realm `b1`'s signing keys from Keycloak: on the first request, when its five
-minute key cache expires, and when a token names a key it has not seen.
+but it does fetch realm `b1`s signing keys from Keycloak: on the first request that carries a bearer token, when its five minute key cache expires, and when a token names a key it has not seen.
 
 ### Data access layer (DAL)
 
@@ -65,8 +64,8 @@ every product. A valid `b1` token is not by itself a B1 Budget token.
 
 ### `b1-budget-web`
 
-The confidential Keycloak client the Next backend for frontend drives. The only client that
-performs a login on a person's behalf.
+The confidential Keycloak client the Next backend for frontend drives. The only B1 Budget client
+that performs a login on a person's behalf.
 
 ### `b1-budget-api`
 
@@ -85,9 +84,8 @@ consumes identity and never owns it.
 
 ### Authorization Code with PKCE
 
-The OAuth 2.0 flow every BooleanOne client runs. Proof Key for Code Exchange binds the
-authorization code to the client that began the flow, which is what lets a public client such as a
-native mobile app run it without a secret.
+The OAuth 2.0 flow every BooleanOne client runs to log a person in. Proof Key for Code Exchange
+binds the authorization code to the client that began the flow, which is what lets a public client such as a native mobile app run it without a secret.
 
 ## Authority
 
