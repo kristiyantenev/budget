@@ -62,8 +62,8 @@ The commit hook runs Oxlint fixes followed by Oxfmt on staged JavaScript and Typ
 
 ## Layout
 
-- `apps/resourceserver` - Budget API, served at `api.budget.booleanone.com`.
-- `apps/web` - Budget web client, served at `budget.booleanone.com`.
+- `apps/resourceserver` - B1 Budget API, served at `api.budget.booleanone.com`.
+- `apps/web` - B1 Budget web client, served at `budget.booleanone.com`.
 - `packages/*` - Libraries and configuration shared across apps.
 
 Authentication comes from Keycloak at `accounts.booleanone.com`, which is shared across all

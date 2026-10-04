@@ -4,7 +4,7 @@ plugins {
   alias(libs.plugins.dependency.management)
 }
 
-description = "Budgeting API for B1 Budget: zero-based budgeting, categories, transactions, reporting, and sync."
+description = "B1 Budget API: zero-based budgeting, categories, transactions, reporting, and sync."
 
 dependencies {
   implementation(libs.spring.boot.starter.webmvc)

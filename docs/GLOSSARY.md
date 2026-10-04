@@ -8,6 +8,11 @@ A server that fronts one client and holds its OAuth session. In B1 Budget it is 
 `apps/web`, which runs the code flow, keeps the session, and calls the API with a bearer token the
 browser never sees.
 
+### B1 Budget API
+
+The service `apps/resourceserver` runs at `api.budget.booleanone.com`, and the name for it in
+prose, UI copy, and ADR titles. Resource server is the OAuth role it plays.
+
 ### Resource server
 
 The OAuth 2.0 role `apps/resourceserver` holds behind `api.budget.booleanone.com`. Stateless and

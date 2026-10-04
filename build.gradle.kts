@@ -9,7 +9,7 @@ allprojects {
   version = "0.0.1-SNAPSHOT"
 }
 
-description = "B1 Budget – budgeting platform"
+description = "B1 Budget"
 
 subprojects {
   plugins.withType<JavaPlugin> {
