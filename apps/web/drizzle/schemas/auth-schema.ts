@@ -77,7 +77,7 @@ export const account = betterAuthSchema.table(
   (table) => [
     uniqueIndex("account_issuer_account_id_uidx").on(table.issuer, table.accountId),
     index("account_user_id_idx").on(table.userId),
-    // ADR-21, ADR-24: retain Better Auth's columns without retaining credentials.
+    // ADR-20, ADR-40: retain Better Auth's columns without retaining credentials.
     check(
       "account_no_credentials",
       sql`${table.accessToken} IS NULL AND ${table.refreshToken} IS NULL AND ${table.idToken} IS NULL AND ${table.accessTokenExpiresAt} IS NULL AND ${table.refreshTokenExpiresAt} IS NULL AND ${table.scope} IS NULL AND ${table.password} IS NULL`,

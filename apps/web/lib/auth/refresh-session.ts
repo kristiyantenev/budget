@@ -61,8 +61,8 @@ export function createSessionRefresher(
     return tokenEndpoint;
   }
 
-  // One routine for proxy maintenance and the API's future 401 recovery.
-  // See the proxy-session-maintenance draft in docs/DECISIONS.md.
+  // ADR-40: one routine refreshes for the proxy and the API module. refusedAccessToken carries the
+  // API's 401 retry (ADR-31).
   return async function refreshSession(token: string, refusedAccessToken?: string) {
     let rotated = false;
 

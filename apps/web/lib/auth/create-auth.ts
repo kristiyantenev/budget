@@ -29,7 +29,7 @@ const hiddenDate = { ...hidden, type: "date" } as const;
 
 const discoveryRetryInterval = 30_000;
 
-// ADR-21, ADR-24: accounts link identities; each sid owns its credentials.
+// ADR-20, ADR-40: accounts link identities; each sid owns its credentials.
 const accountWithoutCredentials = {
   accessToken: null,
   refreshToken: null,
@@ -228,7 +228,7 @@ export function createAuth<const Plugins extends BetterAuthPlugin[] = []>(
 
   let auth: ReturnType<typeof betterAuth<typeof authOptions>> = betterAuth(authOptions);
 
-  // ADR-32: Better Auth discovers once per instance and drops a provider it could not discover,
+  // Better Auth discovers once per instance and drops a provider it could not discover,
   // so a Keycloak outage at start would break sign-in until restart. Rebuild until it succeeds.
   function current() {
     if (discovery === "failed" && Date.now() >= retryAt) {
@@ -242,7 +242,8 @@ export function createAuth<const Plugins extends BetterAuthPlugin[] = []>(
   const handler = async (request: Request) => {
     const path = new URL(request.url).pathname;
 
-    // ADR-21, ADR-40: no local revocation, token reads, or library-driven refresh over HTTP.
+    // ADR-21, ADR-33, ADR-40: no local revocation, library sign-out, token reads, or
+    // library-driven refresh over HTTP.
     if (request.method !== "GET" || path !== "/api/auth/callback/keycloak") {
       return new Response(null, { status: 404 });
     }
