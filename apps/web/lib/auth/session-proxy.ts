@@ -2,6 +2,7 @@ import "server-only";
 import { parseSetCookieHeader, toCookieOptions } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 import type { createAuth } from "./create-auth";
+import { resolveReturnTo } from "./return-to";
 
 type SessionAuth = {
   api: Pick<ReturnType<typeof createAuth<[]>>["api"], "maintainSession" | "signInSocial">;
@@ -51,9 +52,8 @@ export function createSessionProxy(auth: SessionAuth, baseURL: string) {
       forwarded.set(RETURN_TO_HEADER, returnTo);
       response = NextResponse.next({ request: { headers: forwarded } });
     } else {
-      const callback = new URL(baseURL);
-      callback.pathname = path;
-      callback.search = request.nextUrl.search;
+      // ADR-36: the silent retry starts sign-in with the caller's path, so it takes the same check.
+      const callbackURL = resolveReturnTo(returnTo, baseURL);
       const signIn = new URL("/sign-in", baseURL);
       signIn.searchParams.set("returnTo", returnTo);
 
@@ -68,7 +68,7 @@ export function createSessionProxy(auth: SessionAuth, baseURL: string) {
           returnHeaders: true,
           body: {
             provider: "keycloak",
-            callbackURL: callback.toString(),
+            callbackURL: callbackURL,
             errorCallbackURL: signIn.toString(),
             additionalParams: { prompt: "none" },
           },

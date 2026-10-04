@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { resolveReturnTo } from "./return-to";
+import { resolveReturnTo } from "@/lib/auth/return-to";
 
 export async function signIn(formData: FormData) {
   const callbackURL = resolveReturnTo(formData.get("returnTo"), (await auth.$context).baseURL);
